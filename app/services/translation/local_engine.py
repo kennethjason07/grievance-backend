@@ -124,6 +124,20 @@ EN_TO_KN_TERMS: Dict[str, str] = {
 
 # Administrative terminology dictionary: Kannada -> English
 KN_TO_EN_TERMS: Dict[str, str] = {
+    # Inflected Case Forms & Conjunctions
+    "ಜಿಲ್ಲಾಧಿಕಾರಿಗಳಿಗೆ": "to the Deputy Commissioner",
+    "ಜಿಲ್ಲಾಧಿಕಾರಿಯವರಿಗೆ": "to the Deputy Commissioner",
+    "ಪೊಲೀಸರಿಗೆ": "to the Police",
+    "ಅಧಿಕಾರಿಗಳಿಗೆ": "to the Authorities",
+    "ನನಗೆ": "to me",
+    "ನಮಗೆ": "to us",
+    "ಅವರಿಗೆ": "to them",
+    "ಮತ್ತು": "and",
+    "ಅಥವಾ": "or",
+    "ಆದರೆ": "however",
+    "ಆದ್ದರಿಂದ": "therefore",
+    "ಬಗ್ಗೆ": "regarding",
+    "ಕುರಿತು": "regarding",
     # Authorities & Designations
     "ಜಿಲ್ಲಾಧಿಕಾರಿಗಳು": "Deputy Commissioner",
     "ಜಿಲ್ಲಾಧಿಕಾರಿ": "Deputy Commissioner",
@@ -264,6 +278,89 @@ KN_TO_EN_TERMS: Dict[str, str] = {
     "ನಿಯೋಜಿಸಲಾಗಿದೆ": "Assigned",
     "ಪರಿಹರಿಸಲಾಗಿದೆ": "Resolved",
     "ತಿರಸ್ಕರಿಸಲಾಗಿದೆ": "Rejected",
+
+    # Additional Common Petition & Civic Vocabulary
+    "ನನ್ನ ಹೆಸರು": "My name is",
+    "ಹೆಸರು:": "Name:",
+    "ಹೆಸರು": "Name",
+    "ನಿವಾಸಿಯಾಗಿದ್ದು": "being a resident",
+    "ನಿವಾಸಿಯಾಗಿದ್ದೇನೆ": "am a resident",
+    "ವಾಸವಾಗಿದ್ದೇನೆ": "am residing",
+    "ವಾಸಿಸುತ್ತಿದ್ದೇನೆ": "am residing",
+    "ನಿವಾಸಿ": "resident",
+    "ನಿವಾಸಿಗಳ": "residents'",
+    "ನಿವಾಸಿಗಳು": "residents",
+    "ನಾಗರಿಕರು": "citizens",
+    "ಜನರು": "people / public",
+    "ಕುಟುಂಬ": "family",
+    "ಮನೆ": "house",
+    "ಮನೆಗಳು": "houses",
+    "ಮನೆಯ": "of the house",
+    "ಮುಂದೆ": "in front of",
+    "ಹತ್ತಿರ": "near",
+    "ಪಕ್ಕದಲ್ಲಿ": "adjacent to",
+    "ರಸ್ತೆಯಲ್ಲಿ": "on the road",
+    "ರಸ್ತೆ": "road",
+    "ಬೀದಿ": "street",
+    "ಬಡಾವಣೆಯಲ್ಲಿ": "in the locality",
+    "ಬಡಾವಣೆ": "locality",
+    "ಕಾಲೋನಿ": "colony",
+    "ಗ್ರಾಮದಲ್ಲಿ": "in the village",
+    "ಗ್ರಾಮ": "village",
+    "ಊರಿನಲ್ಲಿ": "in the town",
+    "ಊರು": "town",
+    "ತಾಲ್ಲೂಕು": "taluk",
+    "ಜಿಲ್ಲೆ": "district",
+    "ಕಸ ತುಂಬಿದೆ": "garbage is overflowing",
+    "ಕಸ": "garbage / waste",
+    "ಕಸದ": "of garbage",
+    "ದುರ್ವಾಸನೆ": "foul odor",
+    "ದುರ್ವಾಸನೆ ಬರುತ್ತಿದೆ": "foul odor is spreading",
+    "ಚರಂಡಿ": "drainage",
+    "ಒಳಚರಂಡಿ": "drainage",
+    "ನೀರು ಬರುತ್ತಿಲ್ಲ": "water is not being supplied",
+    "ಕುಡಿಯುವ ನೀರು": "drinking water",
+    "ವಿದ್ಯುತ್ ವ್ಯತ್ಯಯ": "power outage",
+    "ಬೀದಿ ದೀಪಗಳು ಕೆಟ್ಟಿವೆ": "street lights are non-functional",
+    "ಹಾಳಾಗಿದೆ": "is severely damaged",
+    "ತುಂಬಿದೆ": "is overflowing / accumulated",
+    "ಬರುತ್ತಿದೆ": "is occurring / coming",
+    "ಬರುತ್ತಿಲ್ಲ": "is not coming / not supplied",
+    "ಮಾಡಲಾಗುತ್ತಿದೆ": "is being done",
+    "ಮಾಡುತ್ತಿದ್ದಾರೆ": "are committing",
+    "ಬೆದರಿಕೆ ಹಾಕುತ್ತಿದ್ದಾರೆ": "are threatening",
+    "ಕಬಳಿಸಿದ್ದಾರೆ": "have encroached",
+    "ವಂಚಿಸಿದ್ದಾರೆ": "have cheated / defrauded",
+    "ಕಳೆದುಕೊಂಡಿದ್ದೇನೆ": "have lost",
+    "ಕೈಗೊಳ್ಳಬೇಕಾಗಿ": "to kindly initiate",
+    "ಕ್ರಮ ಕೈಗೊಳ್ಳಬೇಕಾಗಿ": "to take necessary action",
+    "ಕ್ರಮ ಕೈಗೊಳ್ಳಿ": "take action",
+    "ಕ್ರಮ ಜರುಗಿಸಿ": "take legal action",
+    "ಕ್ರಮ": "action",
+    "ದಯವಿಟ್ಟು": "kindly",
+    "ವಿನಂತಿ": "request",
+    "ಮನವಿ ಮಾಡಿಕೊಳ್ಳುತ್ತಿದ್ದೇನೆ": "humbly submit this petition",
+    "ಸಲ್ಲಿಸುವ": "submitted",
+    "ಸಲ್ಲಿಸುತ್ತಿದ್ದೇನೆ": "am submitting",
+    "ಸಲ್ಲಿಸಲಾಗಿದೆ": "has been submitted",
+    "ಕೋರುತ್ತೇನೆ": "request",
+    "ಕೋರಲಾಗಿದೆ": "is requested",
+    "ತಿಳಿಸುತ್ತೇನೆ": "hereby state",
+    "ತಿಳಿಸಲು": "to state",
+    "ಇಲ್ಲಿ": "here",
+    "ಅಲ್ಲಿ": "there",
+    "ಹಣ": "money",
+    "ಬ್ಯಾಂಕ್": "bank",
+    "ಖಾತೆ": "account",
+    "ಕೋರ್ಟ್": "court",
+    "ನ್ಯಾಯ": "justice",
+    "ಪರಿಶೀಲನೆ": "inspection",
+    "ಸರಿಪಡಿಸಿ": "rectify / repair",
+    "ಮಾನ್ಯ": "Respected",
+    "ಗೌರವಾನ್ವಿತ": "Honorable / Respected",
+    "ಇಂತಿ ತಮ್ಮ ವಿಶ್ವಾಸಿ": "Yours faithfully",
+    "ಧನ್ಯವಾದಗಳೊಂದಿಗೆ": "Thanking you / With regards",
+    "ಧನ್ಯವಾದಗಳು": "Thank you",
 }
 
 # Kannada Sentence Patterns -> English
@@ -324,6 +421,54 @@ EN_SENTENCE_PATTERNS: List[Tuple[str, str]] = [
     (r"Thanking you,?", r"ಧನ್ಯವಾದಗಳೊಂದಿಗೆ,"),
     (r"Yours faithfully,?", r"ಇಂತಿ ತಮ್ಮ ವಿಶ್ವಾಸಿ,"),
 ]
+
+
+
+# Transliteration mappings for eliminating remaining raw Kannada script from English output
+_KN_VOWELS = {
+    'ಅ': 'a', 'ಆ': 'aa', 'ಇ': 'i', 'ಈ': 'ee', 'ಉ': 'u', 'ಊ': 'oo',
+    'ಋ': 'ru', 'ಎ': 'e', 'ಏ': 'ee', 'ಐ': 'ai', 'ಒ': 'o', 'ಓ': 'oo', 'ಔ': 'au',
+    'ಂ': 'm', 'ಃ': 'h'
+}
+_KN_MATRAS = {
+    'ಾ': 'aa', 'ಿ': 'i', 'ೀ': 'ee', 'ು': 'u', 'ೂ': 'oo',
+    'ೃ': 'ru', 'ೆ': 'e', 'ೇ': 'ee', 'ೈ': 'ai', 'ೊ': 'o', 'ೋ': 'oo', 'ೌ': 'au',
+    '್': ''
+}
+_KN_CONSONANTS = {
+    'ಕ': 'k', 'ಖ': 'kh', 'ಗ': 'g', 'ಘ': 'gh', 'ಙ': 'ng',
+    'ಚ': 'ch', 'ಛ': 'chh', 'ಜ': 'j', 'ಝ': 'jh', 'ಞ': 'ny',
+    'ಟ': 't', 'ಠ': 'th', 'ಡ': 'd', 'ಢ': 'dh', 'ಣ': 'n',
+    'ತ': 't', 'ಥ': 'th', 'ದ': 'd', 'ಧ': 'dh', 'ನ': 'n',
+    'ಪ': 'p', 'ಫ': 'ph', 'ಬ': 'b', 'ಭ': 'bh', 'ಮ': 'm',
+    'ಯ': 'y', 'ರ': 'r', 'ಲ': 'l', 'ವ': 'v', 'ಶ': 'sh', 'ಷ': 'sh', 'ಸ': 's', 'ಹ': 'h', 'ಳ': 'l'
+}
+
+def _transliterate_kannada_word(word: str) -> str:
+    out = []
+    i = 0
+    n = len(word)
+    while i < n:
+        char = word[i]
+        if char in _KN_VOWELS:
+            out.append(_KN_VOWELS[char])
+            i += 1
+        elif char in _KN_CONSONANTS:
+            base = _KN_CONSONANTS[char]
+            if i + 1 < n and word[i + 1] in _KN_MATRAS:
+                matra = word[i + 1]
+                out.append(base + _KN_MATRAS[matra])
+                i += 2
+            else:
+                out.append(base + 'a')
+                i += 1
+        else:
+            out.append(char)
+            i += 1
+    res = "".join(out)
+    if res.endswith('a') and len(res) > 4:
+        res = res[:-1]
+    return res.capitalize()
 
 
 class LocalAdministrativeTranslator(TranslationProvider):
@@ -408,7 +553,7 @@ class LocalAdministrativeTranslator(TranslationProvider):
         }
 
     def _translate_kn_to_en(self, text: str) -> str:
-        """Translate Kannada prose to formal English while preserving entities."""
+        """Translate Kannada prose to formal English while preserving entities and eliminating mixed script."""
         result = text
 
         # 1. Apply high-priority sentence patterns
@@ -421,23 +566,66 @@ class LocalAdministrativeTranslator(TranslationProvider):
             en_term = KN_TO_EN_TERMS[kn_term]
             result = result.replace(kn_term, en_term)
 
-        # 3. Postpositions, conjunctions, and connective functional markers
-        result = re.sub(r"\bಬಗ್ಗೆ\b", "regarding", result)
-        result = re.sub(r"\bಕುರಿತು\b", "concerning", result)
-        result = re.sub(r"\bಮತ್ತು\b", "and", result)
-        result = re.sub(r"\bಅಥವಾ\b", "or", result)
-        result = re.sub(r"\bಆದರೆ\b", "however", result)
-        result = re.sub(r"\bಆದ್ದರಿಂದ\b", "therefore", result)
-        result = re.sub(r"\bಮಾಡಿ\b", "please execute", result)
-        result = re.sub(r"\bನೀಡಿ\b", "please provide", result)
-        result = re.sub(r"\bಆಗಿದೆ\b", "has occurred", result)
-        result = re.sub(r"\bಇರುತ್ತದೆ\b", "is present", result)
-        result = re.sub(r"\bಇಲ್ಲ\b", "is not available", result)
+        # 3. Handle Kannada case endings (morphological suffix stripping)
+        suffixes = [
+            ("ನಲ್ಲಿ", " in "),
+            ("ದಲ್ಲಿ", " in "),
+            ("ಗೆ", " to "),
+            ("ರಿಗೆ", " to "),
+            ("ಯಿಂದ", " from "),
+            ("ನಿಂದ", " from "),
+            ("ಯನ್ನು", " "),
+            ("ಅನ್ನು", " "),
+            ("ಯ", " of "),
+            ("ದ", " of "),
+            ("ಗಾಗಿ", " for "),
+        ]
+        for suf, prep in suffixes:
+            for kn_term in sorted_terms:
+                en_term = KN_TO_EN_TERMS[kn_term]
+                combo = kn_term + suf
+                if combo in result:
+                    result = result.replace(combo, f"{prep}{en_term} ")
+
+        # 4. Postpositions, conjunctions, and connective functional markers
+        connectives = [
+            (r"\bಬಗ್ಗೆ\b", "regarding"),
+            (r"\bಕುರಿತು\b", "concerning"),
+            (r"\bಮತ್ತು\b", "and"),
+            (r"\bಅಥವಾ\b", "or"),
+            (r"\bಆದರೆ\b", "however"),
+            (r"\bಆದ್ದರಿಂದ\b", "therefore"),
+            (r"\bಮಾಡಿ\b", "please execute"),
+            (r"\bನೀಡಿ\b", "please provide"),
+            (r"\bಆಗಿದೆ\b", "has occurred"),
+            (r"\bಇರುತ್ತದೆ\b", "is present"),
+            (r"\bಇಲ್ಲ\b", "is not available"),
+            (r"\bಅರ್ಜಿದಾರ\b", "Petitioner"),
+            (r"\bದೂರುದಾರ\b", "Complainant"),
+            (r"\bಜನರು\b", "people"),
+            (r"\bನಿವಾಸಿಗಳು\b", "residents"),
+            (r"\bಮನೆಗಳು\b", "houses"),
+            (r"\bರಸ್ತೆಗಳು\b", "roads"),
+            (r"\bಬೀದಿಗಳು\b", "streets"),
+        ]
+        for pat, repl in connectives:
+            result = re.sub(pat, repl, result)
+
+        # 5. Clean up remaining raw Kannada tokens by transliterating them phonetically
+        # This GUARANTEES that zero unreadable Kannada characters remain in English output
+        def _translit_match(m):
+            return _transliterate_kannada_word(m.group(0))
+
+        result = re.sub(r"[\u0C80-\u0CFF]+", _translit_match, result)
+
+        # 6. Normalize punctuation and spaces
+        result = re.sub(r"\s+([,.:;?!])", r"\1", result)
+        result = re.sub(r"\s{2,}", " ", result).strip()
 
         return result
 
     def _translate_en_to_kn(self, text: str) -> str:
-        """Translate English prose to formal Kannada while preserving entities."""
+        """Translate English prose to formal Kannada while preserving entities and eliminating mixed words."""
         result = text
 
         # 1. Apply high-priority sentence patterns
@@ -451,14 +639,78 @@ class LocalAdministrativeTranslator(TranslationProvider):
             pattern = re.compile(re.escape(en_term), re.IGNORECASE)
             result = pattern.sub(kn_term, result)
 
-        # 3. Connectives and functional markers
-        result = re.sub(r"\bregarding\b", "ಕುರಿತು", result, flags=re.IGNORECASE)
-        result = re.sub(r"\bconcerning\b", "ಸಂಬಂಧಿಸಿದಂತೆ", result, flags=re.IGNORECASE)
-        result = re.sub(r"\band\b", "ಮತ್ತು", result, flags=re.IGNORECASE)
-        result = re.sub(r"\bor\b", "ಅಥವಾ", result, flags=re.IGNORECASE)
-        result = re.sub(r"\btherefore\b", "ಆದ್ದರಿಂದ", result, flags=re.IGNORECASE)
-        result = re.sub(r"\bplease provide\b", "ದಯವಿಟ್ಟು ನೀಡಿ", result, flags=re.IGNORECASE)
-        result = re.sub(r"\bplease verify\b", "ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ", result, flags=re.IGNORECASE)
+        # 3. Connectives, pronouns, and functional markers
+        common_en_kn = [
+            (r"\bregarding\b", "ಕುರಿತು"),
+            (r"\bconcerning\b", "ಸಂಬಂಧಿಸಿದಂತೆ"),
+            (r"\band\b", "ಮತ್ತು"),
+            (r"\bor\b", "ಅಥವಾ"),
+            (r"\btherefore\b", "ಆದ್ದರಿಂದ"),
+            (r"\bplease provide\b", "ದಯವಿಟ್ಟು ನೀಡಿ"),
+            (r"\bplease verify\b", "ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ"),
+            (r"\bplease inspect\b", "ದಯವಿಟ್ಟು ಸ್ಥಳ ಪರಿಶೀಲಿಸಿ"),
+            (r"\bplease take action\b", "ದಯವಿಟ್ಟು ಕ್ರಮ ಕೈಗೊಳ್ಳಿ"),
+            (r"\bimmediate action\b", "ತಕ್ಷಣದ ಕ್ರಮ"),
+            (r"\burified\b", "ಪರಿಶೀಲಿಸಲಾಗಿದೆ"),
+            (r"\bverified\b", "ಪರಿಶೀಲಿಸಲಾಗಿದೆ"),
+            (r"\bsubmitted by\b", "ಅರ್ಜಿದಾರರು:"),
+            (r"\bpetition from\b", "ಅರ್ಜಿದಾರರು:"),
+            (r"\bpetition regarding\b", "ಅರ್ಜಿ ವಿಷಯ:"),
+            (r"\bcomplaint regarding\b", "ದೂರು ವಿಷಯ:"),
+            (r"\bresident of\b", "ನಿವಾಸಿ"),
+            (r"\bresidents\b", "ನಿವಾಸಿಗಳು"),
+            (r"\bresident\b", "ನಿವಾಸಿ"),
+            (r"\bcitizen\b", "ನಾಗರಿಕ"),
+            (r"\bcitizens\b", "ನಾಗರಿಕರು"),
+            (r"\bpublic\b", "ಸಾರ್ವಜನಿಕರು"),
+            (r"\bproblem\b", "ಸಮಸ್ಯೆ"),
+            (r"\bproblems\b", "ಸಮಸ್ಯೆಗಳು"),
+            (r"\bissue\b", "ಸಮಸ್ಯೆ"),
+            (r"\bissues\b", "ಸಮಸ್ಯೆಗಳು"),
+            (r"\blocation\b", "ಸ್ಥಳ"),
+            (r"\barea\b", "ಪ್ರದೇಶ"),
+            (r"\bvilliage\b", "ಗ್ರಾಮ"),
+            (r"\bvillage\b", "ಗ್ರಾಮ"),
+            (r"\bstreet\b", "ಬೀದಿ"),
+            (r"\broad\b", "ರಸ್ತೆ"),
+            (r"\bhouse\b", "ಮನೆ"),
+            (r"\boffice\b", "ಕಚೇರಿ"),
+            (r"\bauthorities\b", "ಅಧಿಕಾರಿಗಳು"),
+            (r"\bofficer\b", "ಅಧಿಕಾರಿ"),
+            (r"\bin\b", "ನಲ್ಲಿ"),
+            (r"\bat\b", "ನಲ್ಲಿ"),
+            (r"\bto\b", "ಗೆ"),
+            (r"\bfrom\b", "ಇಂದ"),
+            (r"\bfor\b", "ಗಾಗಿ"),
+            (r"\bwith\b", "ಜೊತೆಗೆ"),
+            (r"\bloud\b", "ಹೆಚ್ಚಿನ"),
+            (r"\bsevere\b", "ತೀವ್ರ"),
+            (r"\bfacing\b", "ಎದುರಿಸುತ್ತಿದ್ದಾರೆ"),
+            (r"\brelief sought\b", "ಕೋರಿದ ಪರಿಹಾರ"),
+            (r"\baction requested\b", "ಕೋರಿದ ಕ್ರಮ"),
+            # Common locations
+            (r"\bBengaluru Urban\b", "ಬೆಂಗಳೂರು ನಗರ"),
+            (r"\bBengaluru South\b", "ಬೆಂಗಳೂರು ದಕ್ಷಿಣ"),
+            (r"\bBengaluru North\b", "ಬೆಂಗಳೂರು ಉತ್ತರ"),
+            (r"\bBengaluru East\b", "ಬೆಂಗಳೂರು ಪೂರ್ವ"),
+            (r"\bBengaluru\b", "ಬೆಂಗಳೂರು"),
+            (r"\bBangalore\b", "ಬೆಂಗಳೂರು"),
+            (r"\bKoramangala\b", "ಕೋರಮಂಗಲ"),
+            (r"\bIndiranagar\b", "ಇಂದಿರಾನಗರ"),
+            (r"\bAgara\b", "ಆಗರ"),
+            (r"\bWhitefield\b", "ವೈಟ್‌ಫೀಲ್ಡ್"),
+            (r"\bHSR Layout\b", "ಎಚ್.ಎಸ್.ಆರ್ ಬಡಾವಣೆ"),
+            (r"\bJayanagar\b", "ಜಯನಗರ"),
+            (r"\bBTM Layout\b", "ಬಿ.ಟಿ.ಎಂ ಬಡಾವಣೆ"),
+            (r"\bElectronic City\b", "ಎಲೆಕ್ಟ್ರಾನಿಕ್ ಸಿಟಿ"),
+            (r"\bAnekal\b", "ಆನೇಕಲ್"),
+        ]
+        for pat, repl in common_en_kn:
+            result = re.sub(pat, repl, result, flags=re.IGNORECASE)
+
+        # Clean multiple spaces and normalize
+        result = re.sub(r"\s+([,.:;?!])", r"\1", result)
+        result = re.sub(r"\s{2,}", " ", result).strip()
 
         return result
 
