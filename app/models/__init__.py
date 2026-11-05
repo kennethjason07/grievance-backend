@@ -3,6 +3,7 @@ from app.models.base import Base
 from app.models.category import Category
 from app.models.department import Department
 from app.models.document import Document
+from app.models.translation import DocumentTranslation
 from app.models.escalation import Escalation
 from app.models.follow_up_action import FollowUpAction
 from app.models.follow_up_policy import FollowUpPolicy
@@ -25,6 +26,7 @@ __all__ = [
     "Grievance",
     "GrievanceAssignment",
     "Document",
+    "DocumentTranslation",
     "FollowUpPolicy",
     "FollowUpTask",
     "FollowUpAction",

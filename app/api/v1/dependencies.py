@@ -77,6 +77,21 @@ def require_permission(permission: str) -> Callable:
     return _check
 
 
+def require_any_permission(*permissions: str) -> Callable:
+    """
+    Dependency factory that enforces at least one of the specified permissions.
+    """
+    def _check(current_user: User = Depends(get_current_user)) -> User:
+        if not any(has_permission(current_user.role.name, p) for p in permissions):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission denied: one of {permissions} required.",
+            )
+        return current_user
+
+    return _check
+
+
 def check_department_access(current_user: User, department_id: any) -> None:
     """
     Ensure the user is authorized to access or manage the specified department.

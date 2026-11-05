@@ -1,21 +1,22 @@
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
-from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Index, String, func, text
-from sqlalchemy.dialects.postgresql import UUID
+from typing import TYPE_CHECKING, Any, List, Optional
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Index, String, Text, func, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 
 if TYPE_CHECKING:
     from app.models.grievance import Grievance
+    from app.models.translation import DocumentTranslation
     from app.models.user import User
 
 
 class Document(Base):
     """
     Metadata and secure filesystem/object storage references for grievance attachments.
-    Binary files are stored externally; only metadata and references reside in PostgreSQL.
+    Binary files are stored externally; only metadata, references, and extracted OCR text reside in PostgreSQL.
     """
     __tablename__ = "documents"
 
@@ -61,6 +62,27 @@ class Document(Base):
         nullable=False,
     )
 
+    # --- OCR Text Extraction Fields ---
+    ocr_status: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+        default="NOT_STARTED",
+        server_default=text("'NOT_STARTED'"),
+        index=True,
+    )  # NOT_STARTED, PENDING, PROCESSING, COMPLETED, FAILED, NEEDS_REVIEW
+    extracted_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    reviewed_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    ocr_language: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    ocr_pages_data: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
+    ocr_processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    ocr_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    ocr_reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    ocr_reviewed_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
     # Relationships
     grievance: Mapped["Grievance"] = relationship("Grievance", back_populates="documents")
     parent_document: Mapped[Optional["Document"]] = relationship(
@@ -73,9 +95,15 @@ class Document(Base):
         back_populates="parent_document",
     )
     uploader: Mapped[Optional["User"]] = relationship("User", foreign_keys=[uploaded_by])
+    reviewer: Mapped[Optional["User"]] = relationship("User", foreign_keys=[ocr_reviewed_by])
+    translations: Mapped[List["DocumentTranslation"]] = relationship(
+        "DocumentTranslation",
+        back_populates="document",
+        cascade="all, delete-orphan",
+        order_by="desc(DocumentTranslation.created_at)",
+    )
 
     __table_args__ = (
         CheckConstraint("file_size > 0", name="ck_documents_positive_file_size"),
         Index("ix_documents_grievance_type", "grievance_id", "document_type"),
     )
-

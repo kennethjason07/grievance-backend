@@ -1,6 +1,6 @@
 import json
 from functools import lru_cache
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -30,6 +30,24 @@ class Settings(BaseSettings):
 
     # CORS configuration - accepts JSON list or comma-separated string
     CORS_ORIGINS: Union[List[str], str] = ["http://localhost:3000", "http://localhost:8000"]
+
+    # Document storage settings
+    UPLOAD_DIR: str = "uploads"
+    MAX_UPLOAD_SIZE_BYTES: int = 25 * 1024 * 1024  # 25 MB
+
+    # OCR settings
+    TESSERACT_CMD: Optional[str] = None
+    TESSDATA_PREFIX: Optional[str] = None
+    OCR_DEFAULT_LANGUAGES: str = "eng+kan"
+    MAX_OCR_PAGES: int = 20
+    MAX_RENDER_DPI: int = 200
+    OCR_TIMEOUT_SECONDS: int = 120
+
+    # Translation settings (Stage 2)
+    TRANSLATION_PROVIDER: str = "mock"
+    INDICTRANS2_MODEL_PATH: Optional[str] = None
+    TRANSLATION_MAX_CHUNK_CHARS: int = 1500
+    TRANSLATION_TIMEOUT_SECONDS: int = 60
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

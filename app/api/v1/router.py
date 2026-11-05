@@ -8,6 +8,8 @@ from app.api.v1.actions import actions_router
 from app.api.v1.assignments import assignments_router
 from app.api.v1.auth import auth_router
 from app.api.v1.departments import departments_router
+from app.api.v1.documents import documents_router
+from app.api.v1.translations import translations_router
 from app.api.v1.escalations import escalations_router
 from app.api.v1.grievances import grievances_router
 from app.api.v1.lifecycle import lifecycle_router
@@ -35,6 +37,8 @@ api_v1_router.include_router(tasks_router)
 api_v1_router.include_router(actions_router)
 api_v1_router.include_router(notifications_router)
 api_v1_router.include_router(escalations_router)
+api_v1_router.include_router(documents_router)
+api_v1_router.include_router(translations_router)
 
 
 @api_v1_router.get(

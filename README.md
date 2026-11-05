@@ -14,6 +14,7 @@ A production-ready FastAPI backend for a government grievance management platfor
 - [Database Setup](#database-setup)
 - [Running the Server](#running-the-server)
 - [Running Tests](#running-tests)
+- [OCR Setup & Configuration (Stage 1)](#ocr-setup--configuration-stage-1)
 - [API Reference](#api-reference)
 - [Role and Permission Model](#role-and-permission-model)
 - [Grievance Lifecycle](#grievance-lifecycle)
@@ -58,6 +59,8 @@ app/
 - **Python 3.11 or higher**
 - **PostgreSQL 15 or higher** (must be running locally)
 - `git`
+- **Tesseract OCR 5.x** with `eng` (English) and `kan` (Kannada) language data files
+  - *Note:* Digital PDFs and DOCX files extract embedded text natively via PyMuPDF and python-docx without Tesseract. However, **Tesseract is required for scanned petitions, mobile phone photos, and image attachments (`.png`, `.jpg`, `.jpeg`)**.
 
 ---
 
@@ -115,6 +118,15 @@ Open `.env` and set your values (see [Environment Variables](#environment-variab
 | `REFRESH_TOKEN_EXPIRE_DAYS` | `7` | JWT refresh token lifetime |
 | `JWT_ALGORITHM` | `HS256` | JWT signing algorithm |
 | `CORS_ORIGINS` | `http://localhost:3000,http://localhost:8000` | Comma-separated list of allowed frontend origins |
+| `UPLOAD_DIR` | `uploads` | Local directory for uploaded grievance files |
+| `MAX_UPLOAD_SIZE_BYTES` | `26214400` (25 MB) | Maximum permitted file upload size |
+| `TESSERACT_CMD` | `null` | Absolute path to `tesseract` binary (required on Windows if not in PATH) |
+| `TESSDATA_PREFIX` | `null` | Directory containing `tessdata/*.traineddata` language files |
+| `OCR_DEFAULT_LANGUAGES` | `eng+kan` | Tesseract language codes to load (bilingual English + Kannada) |
+| `MAX_OCR_PAGES` | `20` | Max page count allowed per PDF document for OCR processing |
+| `MAX_RENDER_DPI` | `200` | Render DPI for converting scanned PDF pages to images for OCR |
+| `OCR_TIMEOUT_SECONDS` | `120` | OCR extraction execution timeout |
+| `TRANSLATION_PROVIDER` | `mock` | Translation provider (`mock` or `indictrans2`) |
 
 > **Security note:** Never commit `.env` to version control. It is already listed in `.gitignore`.
 
@@ -195,11 +207,179 @@ pytest tests/test_stage10e.py -v
 | Stage 10B (follow-up tasks) | +14 = 100 |
 | Stage 10C (follow-up actions) | +18 = 118 |
 | Stage 10D (reminder generation) | +16 = 134 |
-| Stage 10E (escalation processing) | +19 = **153** |
+| Stage 10E (escalation processing) | +19 = 153 |
+| Documents & Attachments (`test_documents.py`) | +15 = 168 |
+| Stage 1 OCR Text Extraction (`test_ocr.py`) | +22 = 190 |
+| Stage 2 Translation Pipeline (`test_translation.py`) | +15 = **205** |
 
-**153 tests passing.**
+**205 tests passing.**
 
 ---
+
+---
+
+## OCR Setup & Configuration (Stage 1)
+
+JanSetu processes citizen grievance petitions submitted as digital PDFs, scanned documents, camera images (PNG/JPG), and DOCX files. Petitions are frequently written in **English**, **Kannada (ಕನ್ನಡ)**, or a bilingual mix of both.
+
+### How the Ingestion Pipeline Works
+
+```
+Uploaded File (.pdf, .docx, .png, .jpg, .txt)
+   │
+   ├─► DOCX / TXT: Extracted directly via python-docx / utf-8 text stream
+   │
+   ├─► Digital PDF (has selectable text):
+   │     └─► PyMuPDF extracts embedded text directly (Fast, 100% accurate, no Tesseract needed)
+   │
+   └─► Scanned PDF Pages or Images (.png, .jpg, .jpeg):
+         ├─► Step 1: Render PDF page to high-res image (200 DPI)
+         ├─► Step 2: OpenCV Preprocessing (Grayscale ➔ Gaussian Blur ➔ Otsu Thresholding ➔ Deskewing)
+         ├─► Step 3: Tesseract OCR with bilingual language models (`eng+kan`)
+         └─► Step 4: Extract text and calculate confidence score
+```
+
+---
+
+### Step-by-Step Tesseract Installation Guide
+
+#### 1. Windows Installation
+
+1. **Download the Tesseract 5.x 64-bit installer**:
+   - Official UB-Mannheim Windows build: [https://github.com/UB-Mannheim/tesseract/wiki](https://github.com/UB-Mannheim/tesseract/wiki)
+   - Direct Installer: `tesseract-ocr-w64-setup-5.x.x.exe`
+
+2. **Select Language Packs during installation (CRITICAL)**:
+   - When the installer reaches the **"Choose Components"** screen:
+   - Expand **"Additional script data (download)"** or **"Additional language data (download)"**.
+   - Check the box for **"Kannada"** (`kan`).
+   - English (`eng`) is included by default.
+
+3. **Verify the installation directory**:
+   - By default, Tesseract installs to:
+     `C:\Program Files\Tesseract-OCR`
+   - Ensure `C:\Program Files\Tesseract-OCR\tesseract.exe` exists.
+   - Ensure `C:\Program Files\Tesseract-OCR\tessdata\eng.traineddata` and `kan.traineddata` exist.
+
+4. **If you already installed Tesseract without Kannada**:
+   - Download `kan.traineddata` manually from the official Tesseract repo:
+     [https://github.com/tesseract-ocr/tessdata/raw/main/kan.traineddata](https://github.com/tesseract-ocr/tessdata/raw/main/kan.traineddata)
+   - Move `kan.traineddata` into `C:\Program Files\Tesseract-OCR\tessdata\` (requires Admin permissions).
+
+5. **Configure your `.env` file**:
+   ```env
+   TESSERACT_CMD="C:\Program Files\Tesseract-OCR\tesseract.exe"
+   TESSDATA_PREFIX="C:\Program Files\Tesseract-OCR\tessdata"
+   OCR_DEFAULT_LANGUAGES="eng+kan"
+   ```
+   > **Note on Windows path formatting:** In `.env`, use double backslashes (`\\`) or forward slashes (`/`), e.g. `C:/Program Files/Tesseract-OCR/tesseract.exe`.
+
+---
+
+#### 2. Ubuntu / Debian Linux Installation
+
+1. Install Tesseract, English, and Kannada language packs via `apt`:
+   ```bash
+   sudo apt update
+   sudo apt install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-kan libgl1
+   ```
+   > **Note on `libgl1`:** OpenCV (`cv2`) requires system OpenGL shared libraries. Installing `libgl1` prevents `ImportError: libGL.so.1: cannot open shared object file`.
+
+2. Configure `.env` (optional on Linux if `tesseract` is in standard `/usr/bin` PATH):
+   ```env
+   TESSERACT_CMD="/usr/bin/tesseract"
+   TESSDATA_PREFIX="/usr/share/tesseract-ocr/5/tessdata"
+   OCR_DEFAULT_LANGUAGES="eng+kan"
+   ```
+
+---
+
+#### 3. macOS Installation (Homebrew)
+
+1. Install via Homebrew:
+   ```bash
+   brew install tesseract
+   brew install tesseract-lang
+   ```
+
+2. Configure `.env`:
+   ```env
+   # Apple Silicon (M1/M2/M3)
+   TESSERACT_CMD="/opt/homebrew/bin/tesseract"
+   TESSDATA_PREFIX="/opt/homebrew/share/tessdata"
+   OCR_DEFAULT_LANGUAGES="eng+kan"
+
+   # Intel Mac
+   # TESSERACT_CMD="/usr/local/bin/tesseract"
+   # TESSDATA_PREFIX="/usr/local/share/tessdata"
+   ```
+
+---
+
+### Verification and Health Check
+
+Once installed, verify the setup using any of these 3 methods:
+
+#### Method A: Command-line Check
+Run in your terminal:
+```bash
+tesseract --version
+tesseract --list-langs
+```
+**Expected output includes:**
+```
+List of available languages in "...":
+eng
+kan
+osd
+```
+
+#### Method B: Built-in Health Endpoint Check
+Start the backend server and call the OCR status diagnostic endpoint:
+```bash
+curl http://localhost:8000/api/v1/documents/ocr/status
+```
+**Expected JSON response:**
+```json
+{
+  "installed": true,
+  "version": "5.3.3",
+  "languages": ["eng", "kan", "osd"],
+  "tesseract_cmd": "C:\Program Files\Tesseract-OCR\tesseract.exe",
+  "supports_english": true,
+  "supports_kannada": true
+}
+```
+
+#### Method C: Run the OCR Pytest Suite
+```bash
+pytest tests/test_ocr.py -v
+```
+All **22 tests** should pass.
+
+---
+
+### OCR API Endpoints
+
+| Method | Endpoint | Description | Auth / Role |
+|--------|----------|-------------|-------------|
+| `POST` | `/api/v1/documents/extract-text` | Ad-hoc extraction directly from uploaded file before grievance is registered. Accepts `multipart/form-data` with `file` and optional `languages` form fields. | `CREATE_GRIEVANCE` or `VIEW_GRIEVANCE` |
+| `POST` | `/api/v1/documents/{document_id}/ocr` | Trigger OCR on a saved grievance document attachment. | `CREATE_GRIEVANCE` or `EDIT_GRIEVANCE` |
+| `GET` | `/api/v1/documents/{document_id}/ocr` | Retrieve extracted text, page-by-page data, and review status. | `VIEW_GRIEVANCE` |
+| `PATCH` | `/api/v1/documents/{document_id}/ocr/review` | Save human-corrected / reviewed text without mutating raw OCR text. | `CREATE_GRIEVANCE` or `EDIT_GRIEVANCE` |
+| `GET` | `/api/v1/documents/ocr/status` | System diagnostic endpoint reporting Tesseract installation and language support. | Authenticated user |
+
+---
+
+### Common Developer Troubleshooting
+
+| Symptom / Error | Root Cause | Solution |
+|---|---|---|
+| `"Tesseract OCR engine is not installed or configured on the server"` | `tesseract.exe` was not found in system `PATH` or `TESSERACT_CMD` is empty/incorrect. | Install Tesseract using the OS instructions above and set `TESSERACT_CMD` in your `.env`. |
+| `"Tesseract language traineddata for ['kan'] is missing"` | Tesseract is installed, but the Kannada language model `kan.traineddata` was omitted. | Download `kan.traineddata` from [tessdata repository](https://github.com/tesseract-ocr/tessdata) and place in your `tessdata` directory. |
+| `ImportError: libGL.so.1` (Linux Docker / Ubuntu) | OpenCV image preprocessing requires X11 / OpenGL libraries on headless Linux. | Run `sudo apt install -y libgl1` or switch to `opencv-python-headless` in requirements. |
+| Unescaped backslashes in `.env` | Windows paths with single backslashes (e.g. `C:\temp`) treated as escape sequences. | Use double backslashes `C:\\Program Files\\...` or forward slashes `C:/Program Files/...`. |
+| `422 Unprocessable Content` on file upload | Frontend sending JSON header with FormData or missing required form keys. | Ensure frontend uses `FormData` with key `file` and does **not** override `Content-Type: multipart/form-data`. |
 
 ## API Reference
 
@@ -213,6 +393,20 @@ All endpoints are prefixed `/api/v1`. The interactive Swagger UI at `/docs` docu
 | `POST` | `/auth/refresh` | Refresh access token |
 
 All protected endpoints require `Authorization: Bearer <token>` header.
+
+### Documents & OCR (Stage 1)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/documents/extract-text` | Direct text extraction / OCR on raw uploaded file (pre-registration) |
+| `GET` | `/documents/ocr/status` | OCR engine installation & language model health status |
+| `POST` | `/grievances/{id}/documents` | Upload and attach document file to grievance |
+| `GET` | `/grievances/{id}/documents` | List attachments for a grievance |
+| `GET` | `/documents/{id}` | Get document metadata |
+| `GET` | `/documents/{id}/download` | Download or preview binary attachment file |
+| `POST` | `/documents/{id}/ocr` | Trigger OCR extraction on an attached document |
+| `GET` | `/documents/{id}/ocr` | Get document OCR results and review state |
+| `PATCH` | `/documents/{id}/ocr/review` | Save human-edited reviewed text |
 
 ### Core Resources
 
