@@ -542,3 +542,219 @@ def review_document_ocr(
 
     return document
 
+def extract_form_entities_from_text(text: str) -> Dict[str, Any]:
+    """
+    Extract structured grievance form fields from OCR text:
+    - Citizen Name, Phone, Email, Address
+    - District, Taluk, Locality
+    - Complaint Title, Category, Incident Date, Incident Location
+    - Demanded Relief / Requested Action
+    - Detected language and confidence scores
+    """
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if not text or not text.strip():
+        return {
+            "citizen_name": "",
+            "phone": "",
+            "email": "",
+            "address": "",
+            "district": "Bengaluru Urban",
+            "taluk": "Bengaluru South",
+            "village_locality": "",
+            "title": "",
+            "category": "General Grievance",
+            "incident_date": today_str,
+            "incident_location": "",
+            "description": "",
+            "requested_action": "",
+            "language": "english",
+            "confidence_scores": {
+                "citizen": "MISSING",
+                "category": "NEEDS_REVIEW",
+                "location": "MISSING",
+                "date": "NEEDS_REVIEW",
+            },
+        }
+
+    clean_text = text.strip()
+
+    # 1. Detect language
+    kannada_chars = len(re.findall(r"[\u0C80-\u0CFF]", clean_text))
+    english_chars = len(re.findall(r"[A-Za-z]", clean_text))
+    if kannada_chars > 30 and english_chars > 30:
+        detected_lang = "bilingual"
+    elif kannada_chars > 30:
+        detected_lang = "kannada"
+    else:
+        detected_lang = "english"
+
+    # 2. Extract Phone
+    phone = ""
+    phone_match = re.search(
+        r"(?:(?:Mob(?:ile)?|Phone|Tel|ದೂರವಾಣಿ|ಮೊಬೈಲ್|Cell)\s*[:\-]?\s*)?(?:\+91[\s\-]?)?([6-9]\d{4}[\s\-]?\d{5}|[6-9]\d{9})\b",
+        clean_text,
+    )
+    if phone_match:
+        raw_digits = re.sub(r"[\s\-]", "", phone_match.group(1))
+        if len(raw_digits) == 10:
+            phone = f"+91 {raw_digits[:5]} {raw_digits[5:]}"
+        else:
+            phone = phone_match.group(0).strip()
+
+    # 3. Extract Email
+    email = ""
+    email_match = re.search(r"\b([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,})\b", clean_text)
+    if email_match:
+        email = email_match.group(1).lower()
+
+    # 4. Extract Citizen Name
+    citizen_name = ""
+    name_patterns = [
+        r"(?:From|Applicant|Petitioner|Complainant|Name)\s*[:\-]\s*([A-Za-z\s.]{2,40})(?=\n|,|Address|Mobile|Phone|Email|No\.)",
+        r"(?:ಅರ್ಜಿದಾರರು|ಹೆಸರು)\s*[:\-]\s*([^\n,]{2,40})",
+        r"From\s*\n\s*([A-Za-z\s.]{3,40})\n",
+    ]
+    for pat in name_patterns:
+        m = re.search(pat, clean_text, re.IGNORECASE)
+        if m and m.group(1):
+            cand = m.group(1).strip()
+            cand = re.sub(r"^(Sri|Smt|Mr|Mrs|Dr|Shri)\.?\s+", "", cand, flags=re.IGNORECASE).strip()
+            if cand and not re.search(r"^(Deputy|Commissioner|Police|Inspector|Department|District|Superintendent)", cand, re.IGNORECASE):
+                citizen_name = cand
+                break
+
+    # 5. Extract Date
+    incident_date = today_str
+    date_found = False
+    date_match = re.search(
+        r"(?:Date|Dated|ದಿನಾಂಕ|on)\s*[:\-]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})",
+        clean_text,
+        re.IGNORECASE,
+    )
+    if date_match:
+        raw_d = date_match.group(1).strip().replace("-", "/").replace(".", "/")
+        parts = raw_d.split("/")
+        if len(parts) == 3:
+            try:
+                if len(parts[0]) == 4:
+                    y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
+                else:
+                    d, m, y = int(parts[0]), int(parts[1]), int(parts[2])
+                    if y < 100:
+                        y += 2000
+                incident_date = datetime(y, m, d).strftime("%Y-%m-%d")
+                date_found = True
+            except Exception:
+                pass
+
+    # 6. Extract Subject / Title
+    title = ""
+    sub_match = re.search(r"(?:Subject|Sub|ವಿಷಯ|ಕುರಿತು)\s*[:\-]\s*([^\n]+)", clean_text, re.IGNORECASE)
+    if sub_match:
+        title = sub_match.group(1).strip()
+        title = re.sub(r"^[“\"\'\s]+|[”\"\'\s\.]+$", "", title)
+
+    # 7. Extract Category
+    lower_text = clean_text.lower()
+    category = "General Grievance"
+    if any(k in lower_text for k in ["noise", "loudspeaker", "music", "sound", "decibel", "ಧ್ವನಿ"]):
+        category = "Public Nuisance & Noise Pollution"
+    elif any(k in lower_text for k in ["cyber", "telegram", "fraud", "trading", "crypto", "upi", "online investment", "ಖಾತೆ"]):
+        category = "Cyber Financial Fraud"
+    elif any(k in lower_text for k in ["encroachment", "land", "fencing", "gomal", "survey no", "survey", "ಕಬಳಿಕೆ", "ಒತ್ತುವರಿ", "ಜಮೀನು"]):
+        category = "Land Encroachment & Illegal Occupation"
+    elif any(k in lower_text for k in ["theft", "stolen", "robbery", "burglary", "snatching", "ಕಳ್ಳತನ"]):
+        category = "Theft & Burglary"
+    elif any(k in lower_text for k in ["threat", "intimidation", "harassment", "extortion", "abusive", "ಬೆದರಿಕೆ"]):
+        category = "Threat & Harassment"
+    elif any(k in lower_text for k in ["traffic", "parking", "footpath", "pedestrian", "obstruction", "ರಸ್ತೆ"]):
+        category = "Traffic & Road Obstruction"
+    elif any(k in lower_text for k in ["drainage", "sewage", "garbage", "sanitation", "ನೀರು", "ತ್ಯಾಜ್ಯ"]):
+        category = "Civic Amenities & Sanitation"
+
+    if not title:
+        title = f"Petition regarding {category.lower()}"
+
+    # 8. Taluk & Locality
+    taluks = ["Bengaluru South", "Bengaluru North", "Bengaluru East", "Anekal", "Yelahanka"]
+    taluk = "Bengaluru South"
+    for t in taluks:
+        if re.search(rf"\b{re.escape(t)}\b", clean_text, re.IGNORECASE):
+            taluk = t
+            break
+
+    localities = [
+        "Koramangala", "Indiranagar", "Agara", "Whitefield", "HSR Layout", "Jayanagar",
+        "BTM Layout", "Electronic City", "Bellandur", "Marathahalli", "Hebbal", "Yelahanka",
+        "Malleshwaram", "Rajajinagar", "Basavanagudi", "Banashankari", "Shivajinagar",
+    ]
+    locality = ""
+    for loc in localities:
+        if re.search(rf"\b{re.escape(loc)}\b", clean_text, re.IGNORECASE):
+            locality = loc
+            break
+
+    # 9. Address
+    address = ""
+    addr_match = re.search(
+        r"(?:Address|Residing at|ವಿಳಾಸ)\s*[:\-]\s*([^\n]+(?:\n[^\n]+)?)(?=\n|Mobile|Phone|Email|Cell|$)",
+        clean_text,
+        re.IGNORECASE,
+    )
+    if addr_match and addr_match.group(1):
+        address = " ".join(addr_match.group(1).split())
+    elif locality:
+        address = f"{locality}, {taluk}, Bengaluru Urban"
+
+    # 10. Incident Location
+    incident_location = ""
+    loc_match = re.search(
+        r"(?:at|near|location|ಸ್ಥಳ)\s*[:\-]?\s*([A-Za-z0-9\s,\-]{3,45})(?=\.|\n|, on|, dated)",
+        clean_text,
+        re.IGNORECASE,
+    )
+    if loc_match and loc_match.group(1) and not re.search(r"^(the|deputy|respected|sir|madam)", loc_match.group(1).strip(), re.IGNORECASE):
+        incident_location = loc_match.group(1).strip()
+    elif locality:
+        incident_location = f"{locality}, {taluk}"
+
+    # 11. Requested Action
+    requested_action = ""
+    action_match = re.search(r"(?:Prayer|Relief|Request|ಮನವಿ|ಕೋರಿಕೆ)\s*[:\-]\s*([^\n]+(?:\n[^\n]+)?)", clean_text, re.IGNORECASE)
+    if action_match and action_match.group(1):
+        requested_action = " ".join(action_match.group(1).split())
+    else:
+        req_line = re.search(r"(?:request(?: you| the authorities)? to [^.\n]+|take necessary action[^.\n]+)", clean_text, re.IGNORECASE)
+        if req_line:
+            requested_action = req_line.group(0).strip().capitalize()
+        else:
+            requested_action = f"Immediate inquiry and statutory action regarding {category.lower()}."
+
+    # 12. Confidence Scores
+    citizen_conf = "HIGH" if (citizen_name and phone) else ("NEEDS_REVIEW" if (citizen_name or phone) else "MISSING")
+    cat_conf = "HIGH" if category != "General Grievance" else "NEEDS_REVIEW"
+    loc_conf = "HIGH" if (incident_location or locality) else "MISSING"
+    date_conf = "HIGH" if date_found else "NEEDS_REVIEW"
+
+    return {
+        "citizen_name": citizen_name,
+        "phone": phone,
+        "email": email,
+        "address": address,
+        "district": "Bengaluru Urban",
+        "taluk": taluk,
+        "village_locality": locality,
+        "title": title,
+        "category": category,
+        "incident_date": incident_date,
+        "incident_location": incident_location,
+        "description": clean_text[:1000].strip(),
+        "requested_action": requested_action,
+        "language": detected_lang,
+        "confidence_scores": {
+            "citizen": citizen_conf,
+            "category": cat_conf,
+            "location": loc_conf,
+            "date": date_conf,
+        },
+    }

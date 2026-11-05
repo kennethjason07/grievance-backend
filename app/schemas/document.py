@@ -92,3 +92,25 @@ class DocumentOcrResponse(BaseModel):
     ocr_reviewed_by: Optional[uuid.UUID] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class DocumentEntityExtractionRequest(BaseModel):
+    text: str = Field(..., description="Petition text from which to extract form fields")
+
+
+class ExtractedFormFields(BaseModel):
+    citizen_name: str = ""
+    phone: str = ""
+    email: str = ""
+    address: str = ""
+    district: str = "Bengaluru Urban"
+    taluk: str = "Bengaluru South"
+    village_locality: str = ""
+    title: str = ""
+    category: str = "General Grievance"
+    incident_date: str = ""
+    incident_location: str = ""
+    description: str = ""
+    requested_action: str = ""
+    language: str = "english"
+    confidence_scores: Dict[str, str] = Field(default_factory=dict)

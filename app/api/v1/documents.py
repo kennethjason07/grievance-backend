@@ -16,10 +16,12 @@ from app.core.roles import Permission
 from app.models.document import Document
 from app.models.user import User
 from app.schemas.document import (
+    DocumentEntityExtractionRequest,
     DocumentOcrResponse,
     DocumentOcrReviewRequest,
     DocumentOcrTriggerRequest,
     DocumentResponse,
+    ExtractedFormFields,
 )
 from app.services import document_service, ocr_service
 
@@ -129,17 +131,35 @@ async def extract_ad_hoc_document_text(
 
     try:
         res = ocr_service.extract_text_from_file_path(tmp_path, languages=languages)
+        extracted_text = res["extracted_text"] or ""
+        form_fields = ocr_service.extract_form_entities_from_text(extracted_text)
         return {
             "filename": raw_filename,
-            "extracted_text": res["extracted_text"],
-            "reviewed_text": res["extracted_text"],
+            "extracted_text": extracted_text,
+            "reviewed_text": extracted_text,
             "pages_data": res["pages_data"],
             "ocr_status": res["ocr_status"],
             "ocr_error": res["ocr_error"],
             "languages": res.get("languages", languages),
+            "extracted_fields": form_fields,
         }
     finally:
         tmp_path.unlink(missing_ok=True)
+
+
+@documents_router.post(
+    "/documents/extract-form-fields",
+    response_model=ExtractedFormFields,
+    status_code=status.HTTP_200_OK,
+    summary="Extract Form Fields from Text",
+    description="Parses raw or reviewed petition text to extract citizen details, grievance categorization, dates, and demanded relief.",
+)
+def extract_form_fields_from_text(
+    payload: DocumentEntityExtractionRequest,
+    current_user: User = Depends(require_any_permission(Permission.CREATE_GRIEVANCE, Permission.VIEW_GRIEVANCE)),
+) -> ExtractedFormFields:
+    fields = ocr_service.extract_form_entities_from_text(payload.text)
+    return ExtractedFormFields(**fields)
 
 
 @documents_router.get(
