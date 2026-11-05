@@ -15,6 +15,7 @@ A production-ready FastAPI backend for a government grievance management platfor
 - [Running the Server](#running-the-server)
 - [Running Tests](#running-tests)
 - [OCR Setup & Configuration (Stage 1)](#ocr-setup--configuration-stage-1)
+- [Offline Neural Machine Translation Setup (Stage 2)](#offline-neural-machine-translation-setup-stage-2)
 - [API Reference](#api-reference)
 - [Role and Permission Model](#role-and-permission-model)
 - [Grievance Lifecycle](#grievance-lifecycle)
@@ -380,6 +381,100 @@ All **22 tests** should pass.
 | `ImportError: libGL.so.1` (Linux Docker / Ubuntu) | OpenCV image preprocessing requires X11 / OpenGL libraries on headless Linux. | Run `sudo apt install -y libgl1` or switch to `opencv-python-headless` in requirements. |
 | Unescaped backslashes in `.env` | Windows paths with single backslashes (e.g. `C:\temp`) treated as escape sequences. | Use double backslashes `C:\\Program Files\\...` or forward slashes `C:/Program Files/...`. |
 | `422 Unprocessable Content` on file upload | Frontend sending JSON header with FormData or missing required form keys. | Ensure frontend uses `FormData` with key `file` and does **not** override `Content-Type: multipart/form-data`. |
+
+---
+
+## Offline Neural Machine Translation Setup (Stage 2)
+
+JanSetu uses a **100% offline, locally hosted neural machine translation engine** powered by **AI4Bharat IndicTrans2** (200M parameter distilled models) for high-accuracy translation between **Kannada (ಕನ್ನಡ)** and **English**.
+
+### Privacy & Air-Gapped Architecture Guarantee
+
+- **Zero External Network Calls:** No grievance petitions, citizen names, or sensitive administrative text are ever sent to external cloud translation APIs (Google Translate, MyMemory, Microsoft, etc.).
+- **Zero Runtime Downloads:** Model weights are loaded strictly from the local filesystem with `local_files_only=True`. The application never attempts Hugging Face network lookups during a citizen grievance request.
+- **Entity & Format Preservation:** Phone numbers, dates, times, and complaint reference numbers (e.g. `BESCOM-2024-8891`) are protected with token placeholders during translation and restored cleanly in the output. Paragraph structure and line breaks are fully preserved.
+
+---
+
+### Step-by-Step Translation Setup
+
+#### 1. Install Translation Dependencies
+Ensure your virtual environment is active and run:
+```bash
+pip install -r requirements.txt
+```
+Key packages include `torch`, `transformers>=4.48.0,<5.0.0`, `sentencepiece`, `sacremoses`, and `IndicTransToolkit`.
+
+#### 2. Download Offline Model Weights (One-time Setup)
+Run the automated downloader script to fetch the weights directly into `models/indictrans2/`:
+```bash
+python scripts/download_translation_models.py
+```
+This downloads:
+- **English → Kannada (`en-indic`):** `models/indictrans2/en-indic/` (~1.05 GB)
+- **Kannada → English (`indic-en`):** `models/indictrans2/indic-en/` (~871 MB)
+
+*Note:* If model files are not yet present on disk, the system runs safely with mock/fallback translation for development and warns in the health status endpoint.
+
+#### 3. Configure `.env`
+Add or verify these environment variables in your `.env` file:
+```env
+TRANSLATION_PROVIDER=local
+LOCAL_TRANSLATION_MODEL_DIR=models/indictrans2
+TRANSLATION_DEVICE=auto
+```
+- `TRANSLATION_PROVIDER`: Set to `local` (default) or `indictrans2`.
+- `LOCAL_TRANSLATION_MODEL_DIR`: Path to the directory containing `en-indic/` and `indic-en/`.
+- `TRANSLATION_DEVICE`: `auto` selects CUDA if an NVIDIA GPU is detected, otherwise uses CPU. You can also explicitly specify `cpu` or `cuda`.
+
+---
+
+### Verification and Health Status
+
+#### Method A: Built-in Engine Status Endpoint
+```bash
+curl http://localhost:8000/api/v1/translations/engine/status
+```
+**Expected JSON response:**
+```json
+{
+  "provider": "LOCAL",
+  "model_name": "ai4bharat/indictrans2",
+  "model_version": "dist-200M",
+  "device": "cpu",
+  "is_ready": true,
+  "offline_available": true,
+  "supported_directions": [
+    "kan_Knda -> eng_Latn",
+    "eng_Latn -> kan_Knda"
+  ]
+}
+```
+
+#### Method B: Run the Pytest Test Suites
+```bash
+# Verify offline neural translation, entity preservation & zero-external-call guarantees
+pytest tests/test_local_neural_translation.py -v
+
+# Verify full translation API, approval workflow, and review history
+pytest tests/test_translation.py -v
+```
+All **27 translation tests** will pass.
+
+---
+
+### Translation API Endpoints
+
+| Method | Endpoint | Description | Auth / Role |
+|--------|----------|-------------|-------------|
+| `GET` | `/api/v1/translations/engine/status` | Public engine diagnostic reporting readiness, device, supported language pairs, and offline status. | Authenticated user |
+| `POST` | `/api/v1/translations/translate-text` | Ad-hoc text translation between Kannada and English with entity and format preservation. | `CREATE_GRIEVANCE` or `VIEW_GRIEVANCE` |
+| `POST` | `/api/v1/documents/{document_id}/translate` | Translate an OCR-extracted grievance document attachment. | `CREATE_GRIEVANCE` or `EDIT_GRIEVANCE` |
+| `GET` | `/api/v1/documents/{document_id}/translation` | Retrieve translation records and human correction status. | `VIEW_GRIEVANCE` |
+| `PATCH` | `/api/v1/documents/{document_id}/translations/{translation_id}/review` | Submit human-corrected translation without mutating original text. | `EDIT_GRIEVANCE` |
+| `POST` | `/api/v1/documents/{document_id}/translations/{translation_id}/approve` | Approve reviewed translation for official case file. | Supervisor / Admin |
+
+
 
 ## API Reference
 
