@@ -42,6 +42,12 @@ class TranslationReviewRequest(BaseModel):
     corrected_text: str = Field(..., min_length=1, description="Operator reviewed and corrected translation text")
 
 
+class DirectTranslationRequest(BaseModel):
+    text: str = Field(..., min_length=1, description="Source text to translate")
+    source_language: str = Field("kn", description="'kn' or 'en'")
+    target_language: str = Field("en", description="'en' or 'kn'")
+
+
 class TranslationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

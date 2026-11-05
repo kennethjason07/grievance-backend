@@ -6,6 +6,10 @@ from app.services.translation.factory import (
 from app.services.translation.indictrans2 import IndicTrans2Provider
 from app.services.translation.local_engine import LocalAdministrativeTranslator
 from app.services.translation.mock_provider import MockTranslationProvider
+from app.services.translation.validator import (
+    validate_document_translation,
+    validate_page_translation,
+)
 
 __all__ = [
     "TranslationProvider",
@@ -14,5 +18,7 @@ __all__ = [
     "MockTranslationProvider",
     "get_translation_provider",
     "set_translation_provider_override",
+    "validate_document_translation",
+    "validate_page_translation",
 ]
 

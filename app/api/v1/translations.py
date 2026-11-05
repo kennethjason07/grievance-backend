@@ -14,16 +14,46 @@ from app.core.database import get_db
 from app.core.roles import Permission
 from app.models.user import User
 from app.schemas.translation import (
+    DirectTranslationRequest,
     TranslationEngineInfo,
     TranslationResponse,
     TranslationReviewRequest,
     TranslationTriggerRequest,
 )
 from app.services import translation_service
+from app.services.translation.factory import get_translation_provider
 
 logger = logging.getLogger(__name__)
 
 translations_router = APIRouter(tags=["Translations"])
+
+
+@translations_router.post(
+    "/translations/translate-text",
+    response_model=Dict[str, Any],
+    status_code=status.HTTP_200_OK,
+    summary="Direct Text Translation",
+    description="Translates arbitrary text between Kannada and English before grievance registration.",
+)
+def translate_ad_hoc_text(
+    payload: DirectTranslationRequest,
+    current_user: User = Depends(require_any_permission(Permission.CREATE_GRIEVANCE, Permission.VIEW_GRIEVANCE)),
+) -> Dict[str, Any]:
+    provider = get_translation_provider()
+    translated_text, metadata = provider.translate(
+        text=payload.text,
+        source_language=payload.source_language,
+        target_language=payload.target_language,
+    )
+    return {
+        "source_text": payload.text,
+        "translated_text": translated_text,
+        "source_language": payload.source_language,
+        "target_language": payload.target_language,
+        "provider_name": metadata.get("provider_name"),
+        "model_version": metadata.get("model_version"),
+        "validation_warnings": metadata.get("validation_warnings", []),
+    }
 
 
 @translations_router.get(
