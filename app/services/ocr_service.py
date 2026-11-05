@@ -542,10 +542,124 @@ def review_document_ocr(
 
     return document
 
+TALUK_DETECTION_RULES = [
+    {
+        "taluk": "Bengaluru South",
+        "patterns": [
+            r"ಬೆಂಗಳೂರು\s*ದಕ್ಷಿಣ",
+            r"ದಕ್ಷಿಣ\s*(?:ತಾಲೂಕು|ತಾಲ್ಲೂಕು|ತಾಲೂಕಿನ|ತಾಲ್ಲೂಕಿನ|ತಾಲೂಕಿಗೆ)",
+            r"Bengaluru\s*South",
+            r"Bangalore\s*South",
+            r"\bSouth\s*(?:Taluk|Tq|Tahsil|Tehsil)\b",
+            r"ಬೆಂಗಳೂರು\s*ಸೌತ್",
+        ],
+    },
+    {
+        "taluk": "Bengaluru North",
+        "patterns": [
+            r"ಬೆಂಗಳೂರು\s*ಉತ್ತರ",
+            r"ಉತ್ತರ\s*(?:ತಾಲೂಕು|ತಾಲ್ಲೂಕು|ತಾಲೂಕಿನ|ತಾಲ್ಲೂಕಿನ|ತಾಲೂಕಿಗೆ)",
+            r"Bengaluru\s*North",
+            r"Bangalore\s*North",
+            r"\bNorth\s*(?:Taluk|Tq|Tahsil|Tehsil)\b",
+            r"ಬೆಂಗಳೂರು\s*ನಾರ್ತ್",
+        ],
+    },
+    {
+        "taluk": "Bengaluru East",
+        "patterns": [
+            r"ಬೆಂಗಳೂರು\s*ಪೂರ್ವ",
+            r"ಪೂರ್ವ\s*(?:ತಾಲೂಕು|ತಾಲ್ಲೂಕು|ತಾಲೂಕಿನ|ತಾಲ್ಲೂಕಿನ|ತಾಲೂಕಿಗೆ)",
+            r"Bengaluru\s*East",
+            r"Bangalore\s*East",
+            r"\bEast\s*(?:Taluk|Tq|Tahsil|Tehsil)\b",
+            r"ಬೆಂಗಳೂರು\s*ಈಸ್ಟ್",
+        ],
+    },
+    {
+        "taluk": "Anekal",
+        "patterns": [
+            r"ಆನೇಕಲ್",
+            r"\bAnekal\b",
+            r"\bAnekal\s*(?:Taluk|Tq|Tahsil|Tehsil)\b",
+        ],
+    },
+    {
+        "taluk": "Yelahanka",
+        "patterns": [
+            r"ಯಲಹಂಕ",
+            r"\bYelahanka\b",
+            r"\bYelahanka\s*(?:Taluk|Tq|Tahsil|Tehsil)\b",
+        ],
+    },
+]
+
+LOCALITY_MAP = {
+    "Koramangala": ["koramangala", "ಕೋರಮಂಗಲ", "80ft road", "st bed", "80 ಅಡಿ ರಸ್ತೆ"],
+    "Indiranagar": ["indiranagar", "ಇಂದಿರಾನಗರ", "100ft road", "cmh road", "100 ಅಡಿ ರಸ್ತೆ"],
+    "Agara": ["agara", "ಅಗರ", "agara village", "agara lake", "ಅಗರ ಕೆರೆ"],
+    "Whitefield": ["whitefield", "ವೈಟ್‌ಫೀಲ್ಡ್", "itpb", "kadugodi", "ಕಾಡುಗೋಡಿ"],
+    "HSR Layout": ["hsr layout", "hsr", "ಎಚ್‌ಎಸ್‌ಆರ್", "ಎಚ್ ಎಸ್ ಆರ್", "ಹೊಸೂರು ಸರ್ಜಾಪುರ ರಸ್ತೆ"],
+    "Jayanagar": ["jayanagar", "ಜಯನಗರ"],
+    "BTM Layout": ["btm layout", "btm", "ಬಿಟಿಎಂ", "ಬಿ ಟಿ ಎಂ"],
+    "Electronic City": ["electronic city", "ecity", "ಎಲೆಕ್ಟ್ರಾನಿಕ್ ಸಿಟಿ", "ಎಲೆಕ್ಟ್ರಾನಿಕ್ಸ್ ಸಿಟಿ"],
+    "Bellandur": ["bellandur", "ಬೆಳ್ಳಂದೂರು", "bellandur lake", "ಬೆಳ್ಳಂದೂರು ಕೆರೆ", "outer ring road"],
+    "Marathahalli": ["marathahalli", "ಮಾರತ್ತಹಳ್ಳಿ", "ಮಾರತಹಳ್ಳಿ"],
+    "Hebbal": ["hebbal", "ಹೆಬ್ಬಾಳ", "hebbal flyover"],
+    "Yelahanka": ["yelahanka", "ಯಲಹಂಕ", "nes office"],
+    "Malleshwaram": ["malleshwaram", "ಮಲ್ಲೇಶ್ವರಂ", "sampige road"],
+    "Rajajinagar": ["rajajinagar", "ರಾಜಾಜಿನಗರ"],
+    "Basavanagudi": ["basavanagudi", "ಬಸವನಗುಡಿ", "gandhi bazaar", "ಗಾಂಧಿ ಬಜಾರ್"],
+    "Banashankari": ["banashankari", "ಬನಶಂಕರಿ", "bsk"],
+    "Shivajinagar": ["shivajinagar", "ಶಿವಾಜಿನಗರ", "russell market"],
+    "Sarjapur Road": ["sarjapur", "ಸರ್ಜಾಪುರ", "sarjapur road"],
+    "MG Road": ["mg road", "ಎಂ ಜಿ ರಸ್ತೆ", "brigade road", "residency road"],
+    "HAL": ["hal", "old airport road", "ಹಳೆ ವಿಮಾನ ನಿಲ್ದಾಣ ರಸ್ತೆ"],
+    "JP Nagar": ["jp nagar", "ಜೆ ಪಿ ನಗರ", "ಜೆ.ಪಿ.ನಗರ"],
+    "KR Puram": ["kr puram", "ಕೆ ಆರ್ ಪುರಂ", "krishnarajapuram"],
+    "Peenya": ["peenya", "ಪೀಣ್ಯ"],
+}
+
+LOCALITY_TALUK_MAP = {
+    "Koramangala": "Bengaluru South",
+    "HSR Layout": "Bengaluru South",
+    "BTM Layout": "Bengaluru South",
+    "Jayanagar": "Bengaluru South",
+    "Basavanagudi": "Bengaluru South",
+    "Banashankari": "Bengaluru South",
+    "JP Nagar": "Bengaluru South",
+    "Bellandur": "Bengaluru East",
+    "Whitefield": "Bengaluru East",
+    "Marathahalli": "Bengaluru East",
+    "Indiranagar": "Bengaluru East",
+    "HAL": "Bengaluru East",
+    "Sarjapur Road": "Bengaluru East",
+    "Agara": "Bengaluru East",
+    "KR Puram": "Bengaluru East",
+    "Malleshwaram": "Bengaluru North",
+    "Rajajinagar": "Bengaluru North",
+    "Hebbal": "Bengaluru North",
+    "Shivajinagar": "Bengaluru North",
+    "MG Road": "Bengaluru North",
+    "Peenya": "Bengaluru North",
+    "Yelahanka": "Yelahanka",
+    "Electronic City": "Anekal",
+    "Anekal": "Anekal",
+}
+
+def convert_kannada_digits(text: str) -> str:
+    if not text:
+        return ""
+    mapping = {
+        '೦': '0', '೧': '1', '೨': '2', '೩': '3', '೪': '4',
+        '೫': '5', '೬': '6', '೭': '7', '೮': '8', '೯': '9'
+    }
+    return "".join(mapping.get(c, c) for c in text)
+
 def extract_form_entities_from_text(text: str) -> Dict[str, Any]:
     """
-    Extract structured grievance form fields from OCR text:
-    - Citizen Name, Phone, Email, Address
+    Extract structured grievance form fields from OCR / document text:
+    - Citizen Name, Phone, Email, Residential Address from natural narrative sentences
     - District, Taluk, Locality
     - Complaint Title, Category, Incident Date, Incident Location
     - Demanded Relief / Requested Action
@@ -577,13 +691,15 @@ def extract_form_entities_from_text(text: str) -> Dict[str, Any]:
         }
 
     clean_text = text.strip()
+    norm_text = convert_kannada_digits(clean_text)
+    lower_norm = norm_text.lower()
 
     # 1. Detect language
     kannada_chars = len(re.findall(r"[\u0C80-\u0CFF]", clean_text))
     english_chars = len(re.findall(r"[A-Za-z]", clean_text))
-    if kannada_chars > 30 and english_chars > 30:
+    if kannada_chars > 25 and english_chars > 25:
         detected_lang = "bilingual"
-    elif kannada_chars > 30:
+    elif kannada_chars > 25:
         detected_lang = "kannada"
     else:
         detected_lang = "english"
@@ -591,8 +707,9 @@ def extract_form_entities_from_text(text: str) -> Dict[str, Any]:
     # 2. Extract Phone
     phone = ""
     phone_match = re.search(
-        r"(?:(?:Mob(?:ile)?|Phone|Tel|ದೂರವಾಣಿ|ಮೊಬೈಲ್|Cell)\s*[:\-]?\s*)?(?:\+91[\s\-]?)?([6-9]\d{4}[\s\-]?\d{5}|[6-9]\d{9})\b",
-        clean_text,
+        r"(?:(?:Mob(?:ile)?|Phone|Tel|Cell|Contact|ಸಂಪರ್ಕ|ದೂರವಾಣಿ|ಮೊಬೈಲ್|Ph)\s*[:\-.]?\s*)?(?:\+91[\s\-]?)?([6-9]\d{4}[\s\-]?\d{5}|[6-9]\d{9})\b",
+        norm_text,
+        re.IGNORECASE,
     )
     if phone_match:
         raw_digits = re.sub(r"[\s\-]", "", phone_match.group(1))
@@ -600,135 +717,290 @@ def extract_form_entities_from_text(text: str) -> Dict[str, Any]:
             phone = f"+91 {raw_digits[:5]} {raw_digits[5:]}"
         else:
             phone = phone_match.group(0).strip()
+    else:
+        standalone = re.search(r"\b([6-9]\d{9})\b", norm_text)
+        if standalone:
+            d = standalone.group(1)
+            phone = f"+91 {d[:5]} {d[5:]}"
 
     # 3. Extract Email
     email = ""
-    email_match = re.search(r"\b([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,})\b", clean_text)
+    email_match = re.search(r"\b([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,})\b", norm_text)
     if email_match:
         email = email_match.group(1).lower()
 
-    # 4. Extract Citizen Name
+    # 4. Extract Citizen Name from narrative prose sentences
     citizen_name = ""
     name_patterns = [
-        r"(?:From|Applicant|Petitioner|Complainant|Name)\s*[:\-]\s*([A-Za-z\s.]{2,40})(?=\n|,|Address|Mobile|Phone|Email|No\.)",
-        r"(?:ಅರ್ಜಿದಾರರು|ಹೆಸರು)\s*[:\-]\s*([^\n,]{2,40})",
-        r"From\s*\n\s*([A-Za-z\s.]{3,40})\n",
+        # Kannada prose: ನಾನು ರಮೇಶ್ ಕುಮಾರ್, ತಂದೆ/ಗಂಡ/ಕೋಂ/ತಾಯಿ...
+        r"ನಾನು\s+([A-Za-z\u0C80-\u0CFF\s.]{2,35}?)(?=\s*,\s*(?:ತಂದೆ|ಗಂಡ|ಕೋಂ|ತಾಯಿ|ರವರ|ಇವರು|ವಾಸ|ನಿವಾಸಿ|ಕಳೆದ|\d|ರಲ್ಲಿ|ನಲ್ಲಿ))",
+        # Kannada police/formal: ದೂರುದಾರರಾದ ಶ್ರೀಮತಿ ಸುಮಿತ್ರಾಬಾಯಿ, ಕೋಂ...
+        r"(?:ದೂರುದಾರರಾದ|ಅರ್ಜಿದಾರರಾದ|ದೂರುದಾರನಾದ|ಅರ್ಜಿದಾರನಾದ)\s+(?:ಶ್ರೀಮತಿ|ಶ್ರೀ|ಕುಮಾರಿ|ಡಾ[\.॥])?\s*([A-Za-z\u0C80-\u0CFF\s.]{2,35}?)(?=\s*,\s*(?:ಕೋಂ|ತಂದೆ|ಗಂಡ|ತಾಯಿ|ಬಿನ್|ವಾಸ|ನಿವಾಸಿ|ಮೊಬೈಲ್|ವಿಳಾಸ|\d))",
+        # English prose: I, Chandrashekar Murthy, aged... or S/o...
+        r"\bI,?\s+(?:am\s+)?(?:Mr\.|Mrs\.|Ms\.|Dr\.|Shri|Smt\.)?\s*([A-Za-z\s.]{3,35}?)(?=\s*,\s*(?:aged|s\/o|w\/o|d\/o|son of|wife of|daughter of|residing|resident|living))",
+        # English: My name is John Doe, ...
+        r"\bMy\s+name\s+is\s+(?:Mr\.|Mrs\.|Ms\.|Dr\.)?\s*([A-Za-z\s.]{3,35}?)(?=[,\.\n])",
+        # Explicit labels: Name: John Doe or Complainant: John Doe
+        r"(?:Applicant|Petitioner|Complainant|Citizen)\s+Name\s*[:\-]?\s*([^\n,]{2,40})",
+        r"(?:From|Applicant|Petitioner|Complainant|Name|ಅರ್ಜಿದಾರರು|ದೂರುದಾರರು|ಹೆಸರು)\s*[:\-]\s*([^\n,]{2,40})",
+        r"(?:From|ಇಂದ)\s*[:\-]?\s*\n\s*([^\n,]{3,40})",
+        # End signature block
+        r"(?:ಇಂತಿ\s*ತಮ್ಮ\s*ವಿಶ್ವಾಸಿ|ತಮ್ಮ\s*ವಿಶ್ವಾಸಿ|ಇಂತಿ|Yours\s+faithfully|Yours\s+sincerely)\s*[,:\-]?\s*\n\s*([A-Za-z\u0C80-\u0CFF\s.]{2,35})",
     ]
     for pat in name_patterns:
-        m = re.search(pat, clean_text, re.IGNORECASE)
+        m = re.search(pat, norm_text, re.IGNORECASE)
         if m and m.group(1):
             cand = m.group(1).strip()
-            cand = re.sub(r"^(Sri|Smt|Mr|Mrs|Dr|Shri)\.?\s+", "", cand, flags=re.IGNORECASE).strip()
-            if cand and not re.search(r"^(Deputy|Commissioner|Police|Inspector|Department|District|Superintendent)", cand, re.IGNORECASE):
+            cand = re.sub(r"^(?:Shri|Smt|Sri|Mrs|Mr|Dr|Kumari|Miss|ಶ್ರೀಮತಿ|ಶ್ರೀ|ಕುಮಾರಿ|ಡಾ[\.॥])\.?\s+", "", cand, flags=re.IGNORECASE).strip()
+            cand = re.sub(r"\s+", " ", cand)
+            if (
+                cand
+                and len(cand) >= 3
+                and not re.search(
+                    r"^(Deputy|Commissioner|Police|Inspector|Department|District|Superintendent|Officer|Station|The\s+Class|ಅಧಿಕಾರಿ|ಠಾಣಾಧಿಕಾರಿ|To\b|Hon|Respected|ಮಾನ್ಯ)",
+                    cand,
+                    re.IGNORECASE,
+                )
+            ):
                 citizen_name = cand
                 break
 
-    # 5. Extract Date
-    incident_date = today_str
-    date_found = False
-    date_match = re.search(
-        r"(?:Date|Dated|ದಿನಾಂಕ|on)\s*[:\-]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})",
-        clean_text,
-        re.IGNORECASE,
-    )
-    if date_match:
-        raw_d = date_match.group(1).strip().replace("-", "/").replace(".", "/")
-        parts = raw_d.split("/")
-        if len(parts) == 3:
-            try:
-                if len(parts[0]) == 4:
-                    y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
-                else:
-                    d, m, y = int(parts[0]), int(parts[1]), int(parts[2])
-                    if y < 100:
-                        y += 2000
-                incident_date = datetime(y, m, d).strftime("%Y-%m-%d")
-                date_found = True
-            except Exception:
-                pass
-
-    # 6. Extract Subject / Title
-    title = ""
-    sub_match = re.search(r"(?:Subject|Sub|ವಿಷಯ|ಕುರಿತು)\s*[:\-]\s*([^\n]+)", clean_text, re.IGNORECASE)
-    if sub_match:
-        title = sub_match.group(1).strip()
-        title = re.sub(r"^[“\"\'\s]+|[”\"\'\s\.]+$", "", title)
-
-    # 7. Extract Category
-    lower_text = clean_text.lower()
-    category = "General Grievance"
-    if any(k in lower_text for k in ["noise", "loudspeaker", "music", "sound", "decibel", "ಧ್ವನಿ"]):
-        category = "Public Nuisance & Noise Pollution"
-    elif any(k in lower_text for k in ["cyber", "telegram", "fraud", "trading", "crypto", "upi", "online investment", "ಖಾತೆ"]):
-        category = "Cyber Financial Fraud"
-    elif any(k in lower_text for k in ["encroachment", "land", "fencing", "gomal", "survey no", "survey", "ಕಬಳಿಕೆ", "ಒತ್ತುವರಿ", "ಜಮೀನು"]):
-        category = "Land Encroachment & Illegal Occupation"
-    elif any(k in lower_text for k in ["theft", "stolen", "robbery", "burglary", "snatching", "ಕಳ್ಳತನ"]):
-        category = "Theft & Burglary"
-    elif any(k in lower_text for k in ["threat", "intimidation", "harassment", "extortion", "abusive", "ಬೆದರಿಕೆ"]):
-        category = "Threat & Harassment"
-    elif any(k in lower_text for k in ["traffic", "parking", "footpath", "pedestrian", "obstruction", "ರಸ್ತೆ"]):
-        category = "Traffic & Road Obstruction"
-    elif any(k in lower_text for k in ["drainage", "sewage", "garbage", "sanitation", "ನೀರು", "ತ್ಯಾಜ್ಯ"]):
-        category = "Civic Amenities & Sanitation"
-
-    if not title:
-        title = f"Petition regarding {category.lower()}"
-
-    # 8. Taluk & Locality
-    taluks = ["Bengaluru South", "Bengaluru North", "Bengaluru East", "Anekal", "Yelahanka"]
-    taluk = "Bengaluru South"
-    for t in taluks:
-        if re.search(rf"\b{re.escape(t)}\b", clean_text, re.IGNORECASE):
-            taluk = t
+    # 5. Extract Taluk & Locality
+    taluk = ""
+    for rule in TALUK_DETECTION_RULES:
+        for p in rule["patterns"]:
+            if re.search(p, norm_text, re.IGNORECASE):
+                taluk = rule["taluk"]
+                break
+        if taluk:
             break
 
-    localities = [
-        "Koramangala", "Indiranagar", "Agara", "Whitefield", "HSR Layout", "Jayanagar",
-        "BTM Layout", "Electronic City", "Bellandur", "Marathahalli", "Hebbal", "Yelahanka",
-        "Malleshwaram", "Rajajinagar", "Basavanagudi", "Banashankari", "Shivajinagar",
-    ]
     locality = ""
-    for loc in localities:
-        if re.search(rf"\b{re.escape(loc)}\b", clean_text, re.IGNORECASE):
-            locality = loc
+    for canon, aliases in LOCALITY_MAP.items():
+        for alias in aliases:
+            if alias.lower() in lower_norm:
+                locality = canon
+                break
+        if locality:
             break
 
-    # 9. Address
+    if not taluk and locality and locality in LOCALITY_TALUK_MAP:
+        taluk = LOCALITY_TALUK_MAP[locality]
+    if not taluk:
+        taluk = "Bengaluru South"
+
+    # 6. Extract Residential Address from continuous sentences
     address = ""
-    addr_match = re.search(
-        r"(?:Address|Residing at|ವಿಳಾಸ)\s*[:\-]\s*([^\n]+(?:\n[^\n]+)?)(?=\n|Mobile|Phone|Email|Cell|$)",
-        clean_text,
+
+    # Pattern A: Kannada structured sentence: ನಾನು [ಹೆಸರು], [ಸಂಬಂಧ], [ವಿಳಾಸ] ನಲ್ಲಿ/ರಲ್ಲಿ ವಾಸವಾಗಿದ್ದು
+    m_kn_intro = re.search(
+        r"ನಾನು\s+[^,]+,\s*(?:(?:ತಂದೆ|ಗಂಡ|ಕೋಂ|ತಾಯಿ|ರವರ|ಇವರು)[^,]+,\s*)?([A-Za-z0-9\u0C80-\u0CFF\s,/#\.\-]+?)\s*(?:ದಲ್ಲಿ|ರಲ್ಲಿ|ನಲ್ಲಿ)\s*(?:ಕಳೆದ\s*[\d]+\s*ವರ್ಷಗಳಿಂದ\s*)?(?:ವಾಸವಾಗಿದ್ದು|ವಾಸವಿರುವ|ನಿವಾಸಿಯಾದ|ವಾಸ)",
+        norm_text,
         re.IGNORECASE,
     )
-    if addr_match and addr_match.group(1):
-        address = " ".join(addr_match.group(1).split())
+    if m_kn_intro and m_kn_intro.group(1):
+        cand = m_kn_intro.group(1).strip()
+        cand = re.sub(r"^[,\s\-:]+|[,\s\-:]+$", "", cand)
+        if len(cand) >= 10:
+            address = cand
+
+    # Pattern B: English narrative sentence: residing at [Address] (Phone: ...)
+    if not address:
+        m_en_intro = re.search(
+            r"\b(?:residing\s+at|resident\s+of|living\s+at)\s+([A-Za-z0-9\s,/#\.\-]+?)(?=\s*(?:\(Phone|\(Mobile|\(Contact|,\s*(?:contact|phone|mobile|email)|\bPhone\b|\bMobile\b|\bEmail\b|,\s*wish\s+to|,\s*hereby|,\s*do\s+hereby|,\s*for\s+the\s+past|,\s*since|\.(?:\s+[A-Z]|\s*$)|;|\n|$))",
+            norm_text,
+            re.IGNORECASE,
+        )
+        if m_en_intro and m_en_intro.group(1):
+            cand = m_en_intro.group(1).strip()
+            cand = re.sub(r"^[,\s\-:]+|[,\s\-:]+$", "", cand)
+            if len(cand) >= 10:
+                address = cand
+
+    # Pattern C: Police / complaint header: ವಾಸ [ವಿಳಾಸ], ಮೊಬೈಲ್: ...
+    if not address:
+        m_short_kn = re.search(
+            r"(?:ವಾಸವಾಗಿರುವ|ವಾಸವಿರುವ|ನಿವಾಸಿಯಾದ|ವಾಸ|ವಿಳಾಸ)\s*[:\-]?\s*([A-Za-z0-9\u0C80-\u0CFF\s,/#\.\-]+?)(?=\s*(?:,\s*(?:ಮೊಬೈಲ್|ದೂರವಾಣಿ|ಸಂಪರ್ಕ|ದಿನಾಂಕ|ಇಮೇಲ್)|\bಮೊಬೈಲ್\b|\bದೂರವಾಣಿ\b|\bಸಂಪರ್ಕ\b|\.(?:\s+[A-Z\u0C80-\u0CFF]|\s*$)|;|\n|$))",
+            norm_text,
+            re.IGNORECASE,
+        )
+        if m_short_kn and m_short_kn.group(1):
+            cand = m_short_kn.group(1).strip()
+            cand = re.sub(r"^[,\s\-:]+|[,\s\-:]+$", "", cand)
+            if len(cand) >= 8:
+                address = cand
+
+    # Pattern D: Explicit key-value labels
+    if not address:
+        addr_match = re.search(
+            r"(?:Residential\s*Address|Permanent\s*Address|Address|Postal\s*Address|ವಿಳಾಸ|ವಾಸವಿರುವ\s*ವಿಳಾಸ|ವಾಸಸ್ಥಳ|ಮನೆ\s*ವಿಳಾಸ)\s*[:\-]\s*([^\n]+(?:\n\s*[^\n]+)?)",
+            norm_text,
+            re.IGNORECASE,
+        )
+        if addr_match and addr_match.group(1):
+            cand = addr_match.group(1).strip()
+            cand = re.sub(r"[\n\r]+", ", ", cand)
+            cand = re.sub(r"\s+", " ", cand)
+            cand = re.sub(r"^[,\s\-:]+|[,\s\-:]+$", "", cand)
+            cand = re.sub(r"(?:Phone|Mobile|Email|Mob|ಸಂಪರ್ಕ|ದೂರವಾಣಿ)[:\-]?\s*[\d\w@.]+", "", cand, flags=re.IGNORECASE).strip()
+            if len(cand) >= 8 and not re.search(r"^(To|ಇವರಿಗೆ|Deputy|Commissioner|Sir|ಮಾನ್ಯರೆ)", cand, re.IGNORECASE):
+                address = cand
+
+    # Pattern E: House / Flat / Site / Door No pattern anywhere in text
+    if not address:
+        hf_match = re.search(
+            r"((?:(?:House|Flat|Door|Site|Plot|Khata|ಮನೆ|ಫ್ಲ್ಯಾಟ್|ಡೋರ್|ಖಾತಾ)\s*(?:No\.?|Number|ನಂ\.?)|#\s*\d+)[A-Za-z0-9\u0C80-\u0CFF\s,/#\.\-]+?(?:Bengaluru|Bangalore|Karnataka|\d{6}|Taluk|ತಾಲೂಕು|Layout|ಲೇಔಟ್|Road|ರಸ್ತೆ|Cross|ಕ್ರಾಸ್|Main|ಮುಖ್ಯರಸ್ತೆ|Block|ಬ್ಲಾಕ್|Nagar|ನಗರ|Colony|ಬಡಾವಣೆ))",
+            norm_text,
+            re.IGNORECASE,
+        )
+        if hf_match and hf_match.group(1):
+            cand = hf_match.group(1).strip()
+            if len(cand) >= 10:
+                address = cand
+
+    # Clean address
+    if address:
+        address = re.sub(r"\s+", " ", address)
+        address = re.sub(r"^[,\s\-:]+|[,\s\-:]+$", "", address)
+        address = re.sub(r"(?:Phone|Mobile|Email|Mob|ಸಂಪರ್ಕ|ದೂರವಾಣಿ)[:\-]?\s*[\d\w@.]+", "", address, flags=re.IGNORECASE).strip()
+        address = re.sub(r"^[,\s\-:]+|[,\s\-:]+$", "", address)
     elif locality:
         address = f"{locality}, {taluk}, Bengaluru Urban"
 
-    # 10. Incident Location
-    incident_location = ""
-    loc_match = re.search(
-        r"(?:at|near|location|ಸ್ಥಳ)\s*[:\-]?\s*([A-Za-z0-9\s,\-]{3,45})(?=\.|\n|, on|, dated)",
-        clean_text,
-        re.IGNORECASE,
-    )
-    if loc_match and loc_match.group(1) and not re.search(r"^(the|deputy|respected|sir|madam)", loc_match.group(1).strip(), re.IGNORECASE):
-        incident_location = loc_match.group(1).strip()
-    elif locality:
-        incident_location = f"{locality}, {taluk}"
+    # 7. Extract Date
+    incident_date = today_str
+    date_found = False
+    date_patterns = [
+        # Explicit incident date: ದಿನಾಂಕ 12/04/2026 ರಂದು or on 14-04-2026
+        r"(?:ದಿನಾಂಕ|on|dated|occurred on|happened on)\s*[:\-]?\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})",
+        r"(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\s*(?:ರಂದು|on)",
+        r"(?:Date|Dated)\s*[:\-]\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})",
+    ]
+    for pat in date_patterns:
+        m = re.search(pat, norm_text, re.IGNORECASE)
+        if m and m.group(1):
+            raw_d = m.group(1).replace("-", "/").replace(".", "/")
+            parts = raw_d.split("/")
+            if len(parts) == 3:
+                try:
+                    if len(parts[0]) == 4:
+                        y, mon, d = int(parts[0]), int(parts[1]), int(parts[2])
+                    else:
+                        d, mon, y = int(parts[0]), int(parts[1]), int(parts[2])
+                        if y < 100:
+                            y += 2000
+                    incident_date = f"{y:04d}-{mon:02d}-{d:02d}"
+                    date_found = True
+                    break
+                except Exception:
+                    pass
 
-    # 11. Requested Action
-    requested_action = ""
-    action_match = re.search(r"(?:Prayer|Relief|Request|ಮನವಿ|ಕೋರಿಕೆ)\s*[:\-]\s*([^\n]+(?:\n[^\n]+)?)", clean_text, re.IGNORECASE)
-    if action_match and action_match.group(1):
-        requested_action = " ".join(action_match.group(1).split())
+    # 8. Extract Category
+    category = "General Grievance"
+    if re.search(r"noise|loudspeaker|amplified|music|sound|decibel|pub|party|ಧ್ವನಿ|ಶಬ್ದ|ಅಡಚಣೆ|ಧ್ವನಿವರ್ಧಕ", lower_norm):
+        category = "Public Nuisance & Noise Pollution"
+    elif re.search(r"cyber|telegram|fraud|trading|crypto|upi|online investment|scam|financial fraud|phishing|frozen|ಖಾತೆ|ವಂಚನೆ|ಸೈಬರ್", lower_norm):
+        category = "Cyber Financial Fraud"
+    elif re.search(r"encroachment|gomal|survey\s*no|fencing|land dispute|mutation|rtc|khata|rajakaluve|lake buffer|ಕಬಳಿಕೆ|ಒತ್ತುವರಿ|ಜಮೀನು|ಖಾತಾ|ಪಹಣಿ|ರಾಜಕಾಲುವೆ|ಗೋಮಾಳ", lower_norm):
+        category = "Land Encroachment & Illegal Occupation"
+    elif re.search(r"theft|stolen|robbery|burglary|snatching|vehicle stolen|break-in|chain snatching|ಕಳ್ಳತನ|ದರೋಡೆ|ಸರಗಳ್ಳತನ", lower_norm):
+        category = "Theft & Burglary"
+    elif re.search(r"threat|intimidation|harassment|extortion|abusive|assault|blackmail|rowdyism|ಬೆದರಿಕೆ|ಕಿರುಕುಳ|ಹಲ್ಲೆ|ಪ್ರಾಣ ಬೆದರಿಕೆ|ಸುಲಿಗೆ", lower_norm):
+        category = "Threat & Harassment"
+    elif re.search(r"traffic|parking|footpath|pedestrian|obstruction|pothole|signal|ವಾಹನ ಸಂಚಾರ|ಪಾರ್ಕಿಂಗ್|ರಸ್ತೆ ಗುಂಡಿ|ಫುಟ್‌ಪಾತ್", lower_norm):
+        category = "Traffic & Road Obstruction"
+    elif re.search(r"drainage|sewage|garbage|sanitation|drinking water|pipeline|water supply|manhole|ನೀರು|ತ್ಯಾಜ್ಯ|ಒಳಚರಂಡಿ|ಕಸ", lower_norm):
+        category = "Civic Amenities & Sanitation"
+
+    # 9. Extract Subject / Title
+    title = ""
+    sub_m = (
+        re.search(
+            r"(?:Subject|Sub|Regarding|ವಿಷಯ|ಕುರಿತು)\s*[:\-]\s*([^\n.]+?)(?=\.(?:\s+[A-Z\u0C80-\u0CFF]|\s*$)|;|\n|$)",
+            norm_text,
+            re.IGNORECASE,
+        )
+        or re.search(r"(?:Subject|Sub|Regarding|ವಿಷಯ|ಕುರಿತು)\s*[:\-]\s*([^\n]+)", norm_text, re.IGNORECASE)
+        or re.search(
+            r"(?:Complaint|Petition)\s+(?:against|regarding|for)\s*[:\-]?\s*([^\n.]+?)(?=\.(?:\s+[A-Z]|\s*$)|;|\n|$)",
+            norm_text,
+            re.IGNORECASE,
+        )
+        or re.search(
+            r"([A-Za-z0-9\u0C80-\u0CFF\s,]+?(?:ಬಗ್ಗೆ\s*ದೂರು|ಕುರಿತು\s*ಅರ್ಜಿ|ಕುರಿತು\s*ಮನವಿ))",
+            norm_text,
+            re.IGNORECASE,
+        )
+    )
+    if sub_m and sub_m.group(1):
+        title = sub_m.group(1).strip()
+        title = re.sub(r"^[“\"\'\s\-:]+|[”\"\'\s\.]+$", "", title)
     else:
-        req_line = re.search(r"(?:request(?: you| the authorities)? to [^.\n]+|take necessary action[^.\n]+)", clean_text, re.IGNORECASE)
-        if req_line:
-            requested_action = req_line.group(0).strip().capitalize()
-        else:
-            requested_action = f"Immediate inquiry and statutory action regarding {category.lower()}."
+        title = f"Petition regarding {category.lower()} at {locality or taluk}"
+
+    # 10. Extract Incident Location (distinct from residential address)
+    incident_location = ""
+    loc_patterns = [
+        # Explicit incident location label (with required colon or dash)
+        r"(?:Place\s+of\s+incident|Incident\s+location|Location|ಘಟನಾ\s*ಸ್ಥಳ)\s*[:\-]?\s*([^\n.,]+)",
+        r"(?:ಸ್ಥಳ|ಘಟನಾ\s*ಸ್ಥಳ)\s*[:\-]\s*([^\n.,]+)",
+        # English narrative: on rajakaluve buffer zone near Bellandur or near Bellandur Lake
+        r"\b(?:on|near|around|opposite|adjacent to|in front of)\s+([A-Za-z0-9\s,\-]{4,60}?(?:Lake|Junction|Road|Cross|Main|Block|Street|Layout|Gate|Circle|Bridge|Flyover|Park|Hospital|Station|Market|Hall|Drain|Rajakaluve|Building|Shop|Pub|Cafe|Bar|Restaurant|Area|zone))\b",
+        # English general landmark near:
+        r"\b(?:near|opposite|adjacent to)\s+([A-Za-z0-9\s,\-]{4,40}?)(?=\s+(?:on|dated|at around|\d|\.|\n|$))",
+        # Kannada narrative: ...ರಸ್ತೆಯಲ್ಲಿ, ...ಕೆರೆ ಬಳಿ, ...ಜಂಕ್ಷನ್ ಬಳಿ, ...ಮುಂಭಾಗ
+        r"([A-Za-z0-9\u0C80-\u0CFF\s,/#\-]{3,50}?(?:ರಸ್ತೆ|ಮುಖ್ಯರಸ್ತೆ|ಕೆರೆ|ಜಂಕ್ಷನ್|ವೃತ್ತ|ಪಬ್|ಬಡಾವಣೆ|ಲೇಔಟ್|ಕಟ್ಟಡ|ಮಾರುಕಟ್ಟೆ|ಕಾಮಗಾರಿ))\s*(?:ಯಲ್ಲಿ|ಯ\s*ಪಬ್‌ನಲ್ಲಿ|ಬಳಿ|ಹತ್ತಿರ|ಸಮೀಪ|ಮುಂಭಾಗ|ವ್ಯಾಪ್ತಿಯಲ್ಲಿ)",
+    ]
+    for pat in loc_patterns:
+        lm = re.search(pat, norm_text, re.IGNORECASE)
+        if lm and lm.group(1):
+            cand = lm.group(1).strip()
+            cand = re.sub(
+                r"^(?:(?:ದಿನಾಂಕ|on|dated)?\s*\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\s*(?:ರಂದು|on)?|(?:\d{1,2}[:.]\d{2})\s*(?:ರ\s*ಸುಮಾರಿಗೆ|ಗಂಟೆಗೆ|am|pm)?|(?:\d{1,2})\s*(?:ಗಂಟೆಗೆ|ರ\s*ಸುಮಾರಿಗೆ)|ರಾತ್ರಿ|ಬೆಳಗ್ಗೆ|ಮಧ್ಯಾಹ್ನ|ಸಂಜೆ|ನಮ್ಮ\s*ಮನೆಯ|ಸಮೀಪವಿರುವ|ಬಳಿ\s*ಇರುವ|\s)+",
+                "",
+                cand,
+                flags=re.IGNORECASE,
+            ).strip()
+            cand = re.sub(r"^[,\s\-:]+|[,\s\-:]+$", "", cand)
+            if (
+                len(cand) >= 3
+                and not re.search(r"^(the|deputy|respected|sir|madam|ಮಾನ್ಯರೆ|ನಮ್ಮ|ಸ್ಥಳೀಯ|ಕಳೆದ)", cand, re.IGNORECASE)
+                and cand.lower() not in address.lower()
+            ):
+                incident_location = cand
+                break
+
+    if incident_location:
+        if not re.search(r"[\u0C80-\u0CFF]", incident_location) and locality and locality.lower() not in incident_location.lower():
+            incident_location = f"{incident_location}, {locality}"
+    elif not incident_location:
+        if category == "Cyber Financial Fraud":
+            incident_location = f"Online / Digital Transaction ({locality or taluk})"
+        elif locality:
+            incident_location = f"{locality}, {taluk}"
+
+    # 11. Extract Relief / Requested Action
+    requested_action = ""
+    action_patterns = [
+        # Explicit labels
+        r"(?:Prayer|Relief|Request|Relief\s*sought|ಮನವಿ|ಕೋರಿಕೆ|ಪ್ರಾರ್ಥನೆ|ಪರಿಹಾರ)\s*[:\-]\s*([^\n]+(?:\n[^\n]+)?)",
+        # Kannada narrative: ಆದ್ದರಿಂದ ... ಕ್ರಮ ಕೈಗೊಳ್ಳಬೇಕಾಗಿ ಕೋರುತ್ತೇನೆ or ದಯವಿಟ್ಟು ... ಪ್ರಾರ್ಥನೆ
+        r"(?:ಆದ್ದರಿಂದ|ದಯವಿಟ್ಟು|ಕೂಡಲೇ|ಸೂಕ್ತ)\s+([^\n.]+?(?:ಕ್ರಮ\s*(?:ಕೈಗೊಳ್ಳಬೇಕಾಗಿ|ಜರುಗಿಸಬೇಕಾಗಿ|ಕೈಗೊಳ್ಳಲು)|ಕೋರುತ್ತೇನೆ|ಪ್ರಾರ್ಥನೆ|ವಿನಂತಿ|ಆದೇಶಿಸಬೇಕಾಗಿ|ಪರಿಶೀಲಿಸಿ)[^\n.]*)",
+        # English narrative: I earnestly request ... to ... or Therefore I request ...
+        r"(?:Therefore,?\s+)?(?:I|we)\s+(?:earnestly\s+)?(?:request|pray|urge|appeal|seek|implore)\s+(?:(?:to|you|the\s+(?:concerned\s+)?authorities|the\s+cyber\s+crime\s+cell|the\s+police)\s+to)?\s*([^\n.]+)",
+    ]
+    for pat in action_patterns:
+        am = re.search(pat, norm_text, re.IGNORECASE)
+        if am and am.group(1):
+            cand = am.group(1).strip()
+            cand = re.sub(r"\s+", " ", cand)
+            cand = re.sub(r"^[,\s\-:]+|[,\s\-:]+$", "", cand)
+            if len(cand) >= 10:
+                requested_action = cand
+                break
+
+    if not requested_action:
+        requested_action = f"Immediate inquiry and statutory administrative action regarding {category.lower()}."
 
     # 12. Confidence Scores
     citizen_conf = "HIGH" if (citizen_name and phone) else ("NEEDS_REVIEW" if (citizen_name or phone) else "MISSING")
@@ -736,20 +1008,202 @@ def extract_form_entities_from_text(text: str) -> Dict[str, Any]:
     loc_conf = "HIGH" if (incident_location or locality) else "MISSING"
     date_conf = "HIGH" if date_found else "NEEDS_REVIEW"
 
+    # Bilingual separation: prevent mixing Kannada and English strings
+    is_kn_primary = bool(re.search(r"[\u0C80-\u0CFF]", clean_text))
+    
+    # 4b. Citizen Name
+    citizen_name_kn = citizen_name if re.search(r"[\u0C80-\u0CFF]", citizen_name) else ""
+    if not citizen_name_kn and is_kn_primary and re.search(r"[\u0C80-\u0CFF]", clean_text):
+        citizen_name_kn = citizen_name
+    
+    # Common name mappings
+    name_map_kn_to_en = {
+        "ರಮೇಶ್ ಕುಮಾರ್": "Ramesh Kumar", "ರಮೇಶ್": "Ramesh",
+        "ಚಂದ್ರಶೇಖರ್ ಮೂರ್ತಿ": "Chandrashekar Murthy", "ಚಂದ್ರಶೇಖರ್": "Chandrashekar",
+        "ಸುಮಿತ್ರಾಬಾಯಿ": "Sumithrabai", "ಸುಮಿತ್ರ": "Sumitra",
+        "ರಾಜೇಶ್ವರಿ ದೇವಿ": "Rajeshwari Devi", "ರಾಜೇಶ್ವರಿ": "Rajeshwari",
+        "ವೆಂಕಟೇಶ್ ರಾವ್": "Venkatesh Rao", "ವೆಂಕಟೇಶ್": "Venkatesh",
+        "ಸುರೇಶ್ ಬಾಬು": "Suresh Babu", "ಸುರೇಶ್": "Suresh",
+        "ಆನಂದ್ ಕುಮಾರ್": "Anand Kumar", "ಮಂಜುನಾಥ್": "Manjunath",
+        "ಮಹೇಶ್": "Mahesh", "ಗೋಪಾಲಕೃಷ್ಣ": "Gopalakrishna",
+    }
+    if re.search(r"[\u0C80-\u0CFF]", citizen_name):
+        citizen_name_kn = citizen_name
+        citizen_name_en = name_map_kn_to_en.get(citizen_name.strip(), "Complainant Citizen")
+    else:
+        citizen_name_en = citizen_name
+
+    # Locality & Taluk bilingual
+    loc_kn_map = {
+        "Koramangala": "ಕೋರಮಂಗಲ", "Indiranagar": "ಇಂದಿರಾನಗರ", "Bellandur": "ಬೆಳ್ಳಂದೂರು",
+        "Whitefield": "ವೈಟ್‌ಫೀಲ್ಡ್", "HSR Layout": "ಎಚ್‌ಎಸ್‌ಆರ್ ಲೇಔಟ್", "Jayanagar": "ಜಯನಗರ",
+        "BTM Layout": "ಬಿಟಿಎಂ ಲೇಔಟ್", "Electronic City": "ಎಲೆಕ್ಟ್ರಾನಿಕ್ ಸಿಟಿ", "Malleshwaram": "ಮಲ್ಲೇಶ್ವರಂ",
+        "Rajajinagar": "ರಾಜಾಜಿನಗರ", "Yelahanka": "ಯಲಹಂಕ", "Anekal": "ಆನೇಕಲ್", "Hebbal": "ಹೆಬ್ಬಾಳ",
+        "Basavanagudi": "ಬಸವನಗುಡಿ", "Banashankari": "ಬನಶಂಕರಿ", "Shivajinagar": "ಶಿವಾಜಿನಗರ",
+        "Sarjapur Road": "ಸರ್ಜಾಪುರ ರಸ್ತೆ", "MG Road": "ಎಂ ಜಿ ರಸ್ತೆ", "HAL": "ಎಚ್‌ಎಎಲ್",
+        "JP Nagar": "ಜೆ ಪಿ ನಗರ", "KR Puram": "ಕೆ ಆರ್ ಪುರಂ", "Peenya": "ಪೀಣ್ಯ",
+    }
+    taluk_kn_map = {
+        "Bengaluru South": "ಬೆಂಗಳೂರು ದಕ್ಷಿಣ", "Bengaluru North": "ಬೆಂಗಳೂರು ಉತ್ತರ",
+        "Bengaluru East": "ಬೆಂಗಳೂರು ಪೂರ್ವ", "Anekal": "ಆನೇಕಲ್", "Yelahanka": "ಯಲಹಂಕ",
+    }
+    taluk_kn = taluk_kn_map.get(taluk, "ಬೆಂಗಳೂರು ದಕ್ಷಿಣ")
+    locality_kn = loc_kn_map.get(locality, locality)
+
+    # Categories bilingual
+    category_kn_map = {
+        "Public Nuisance & Noise Pollution": "ಸಾರ್ವಜನಿಕ ಶಾಂತಿ ಭಂಗ ಮತ್ತು ಶಬ್ದ ಮಾಲಿನ್ಯ",
+        "Cyber Financial Fraud": "ಸೈಬರ್ ಹಣಕಾಸು ವಂಚನೆ",
+        "Land Encroachment & Illegal Occupation": "ಸರ್ಕಾರಿ ಜಮೀನು ಒತ್ತುವರಿ ಮತ್ತು ಅಕ್ರಮ ಕಬಳಿಕೆ",
+        "Theft & Burglary": "ಕಳ್ಳತನ ಮತ್ತು ದರೋಡೆ",
+        "Threat & Harassment": "ಬೆದರಿಕೆ ಮತ್ತು ಕಿರುಕುಳ",
+        "Traffic & Road Obstruction": "ಸಂಚಾರ ದಟ್ಟಣೆ ಮತ್ತು ರಸ್ತೆ ಅಡಚಣೆ",
+        "Civic Amenities & Sanitation": "ನಾಗರಿಕ ಸೌಲಭ್ಯಗಳು ಮತ್ತು ಒಳಚರಂಡಿ ನೈರ್ಮಲ್ಯ",
+        "General Grievance": "ಸಾಮಾನ್ಯ ನಾಗರಿಕ ಅಹವಾಲು",
+    }
+    category_kn = category_kn_map.get(category, "ಸಾಮಾನ್ಯ ನಾಗರಿಕ ಅಹವಾಲು")
+
+    # Clean address bilingual
+    address_kn = address if re.search(r"[\u0C80-\u0CFF]", address) else ""
+    if re.search(r"[\u0C80-\u0CFF]", address):
+        # Convert Kannada address to clean English
+        clean_addr_en = address
+        clean_addr_en = re.sub(r"80\s*(?:ಅಡಿ|ft|feet)?\s*ರಸ್ತೆ", "80ft Road", clean_addr_en, flags=re.IGNORECASE)
+        clean_addr_en = re.sub(r"100\s*(?:ಅಡಿ|ft|feet)?\s*ರಸ್ತೆ", "100ft Road", clean_addr_en, flags=re.IGNORECASE)
+        clean_addr_en = re.sub(r"ಮನೆ\s*ನಂ\.?", "House No. ", clean_addr_en)
+        clean_addr_en = re.sub(r"ಫ್ಲ್ಯಾಟ್\s*ನಂ\.?", "Flat No. ", clean_addr_en)
+        clean_addr_en = re.sub(r"ಡೋರ್\s*ನಂ\.?", "Door No. ", clean_addr_en)
+        clean_addr_en = re.sub(r"ಸೈಟ್\s*ನಂ\.?", "Site No. ", clean_addr_en)
+        clean_addr_en = re.sub(r"ಖಾತಾ\s*ನಂ\.?", "Khata No. ", clean_addr_en)
+        clean_addr_en = re.sub(r"(\d+)\s*ನೇ\s*ಮುಖ್ಯರಸ್ತೆ", r"\1th Main Road", clean_addr_en)
+        clean_addr_en = re.sub(r"(\d+)\s*ನೇ\s*ಕ್ರಾಸ್", r"\1th Cross", clean_addr_en)
+        clean_addr_en = re.sub(r"(\d+)\s*ನೇ\s*ಬ್ಲಾಕ್", r"\1th Block", clean_addr_en)
+        clean_addr_en = re.sub(r"ಮುಖ್ಯರಸ್ತೆ", "Main Road", clean_addr_en)
+        clean_addr_en = re.sub(r"ಕ್ರಾಸ್", "Cross", clean_addr_en)
+        clean_addr_en = re.sub(r"ಬ್ಲಾಕ್", "Block", clean_addr_en)
+        clean_addr_en = re.sub(r"ಬಡಾವಣೆ|ಲೇಔಟ್", "Layout", clean_addr_en)
+        clean_addr_en = re.sub(r"ರಸ್ತೆ", "Road", clean_addr_en)
+        clean_addr_en = re.sub(r"ನಗರ", "Nagar", clean_addr_en)
+        clean_addr_en = re.sub(r"ಕೋರಮಂಗಲ", "Koramangala", clean_addr_en)
+        clean_addr_en = re.sub(r"ಇಂದಿರಾನಗರ", "Indiranagar", clean_addr_en)
+        clean_addr_en = re.sub(r"ಬೆಳ್ಳಂದೂರು", "Bellandur", clean_addr_en)
+        clean_addr_en = re.sub(r"ವೈಟ್‌ಫೀಲ್ಡ್", "Whitefield", clean_addr_en)
+        clean_addr_en = re.sub(r"ಜಯನಗರ", "Jayanagar", clean_addr_en)
+        clean_addr_en = re.sub(r"ಮಲ್ಲೇಶ್ವರಂ", "Malleshwaram", clean_addr_en)
+        clean_addr_en = re.sub(r"ರಾಜಾಜಿನಗರ", "Rajajinagar", clean_addr_en)
+        clean_addr_en = re.sub(r"ಯಲಹಂಕ", "Yelahanka", clean_addr_en)
+        clean_addr_en = re.sub(r"ಆನೇಕಲ್", "Anekal", clean_addr_en)
+        clean_addr_en = re.sub(r"ಕೆರೆ", "Lake", clean_addr_en)
+        clean_addr_en = re.sub(r"ವೃತ್ತ", "Circle", clean_addr_en)
+        clean_addr_en = re.sub(r"ಜಂಕ್ಷನ್", "Junction", clean_addr_en)
+        clean_addr_en = re.sub(r"ಬಳಿ|ಹತ್ತಿರ|ಸಮೀಪ", "Near", clean_addr_en)
+        clean_addr_en = re.sub(r"ಮುಂಭಾಗ|ಎದುರು", "Opposite", clean_addr_en)
+        clean_addr_en = re.sub(r"ಹಿಂದೆ", "Behind", clean_addr_en)
+        clean_addr_en = re.sub(r"ಪಕ್ಕದಲ್ಲಿ", "Beside", clean_addr_en)
+        clean_addr_en = re.sub(r"ಪಬ್|ಬಾರ್", "Pub", clean_addr_en)
+        clean_addr_en = re.sub(r"ಕಟ್ಟಡ", "Building", clean_addr_en)
+        clean_addr_en = re.sub(r"ಮಾರುಕಟ್ಟೆ", "Market", clean_addr_en)
+        clean_addr_en = re.sub(r"ಶಾಲೆ", "School", clean_addr_en)
+        clean_addr_en = re.sub(r"ಕಾಲೇಜು", "College", clean_addr_en)
+        clean_addr_en = re.sub(r"ಆಸ್ಪತ್ರೆ", "Hospital", clean_addr_en)
+        clean_addr_en = re.sub(r"ದೇವಸ್ಥಾನ|ದೇವಾಲಯ|ಗುಡಿ", "Temple", clean_addr_en)
+        clean_addr_en = re.sub(r"ಉದ್ಯಾನ|ಪಾರ್ಕ್", "Park", clean_addr_en)
+        clean_addr_en = re.sub(r"ಫ್ಲೈಓವರ್", "Flyover", clean_addr_en)
+        clean_addr_en = re.sub(r"ಸೇತುವೆ|ಬ್ರಿಡ್ಜ್", "Bridge", clean_addr_en)
+        clean_addr_en = re.sub(r"ರಾಜಕಾಲುವೆ|ಕಾಲುವೆ", "Rajakaluve", clean_addr_en)
+        clean_addr_en = re.sub(r"ವ್ಯಾಪ್ತಿಯಲ್ಲಿ|ವ್ಯಾಪ್ತಿ", "Jurisdiction", clean_addr_en)
+        clean_addr_en = re.sub(r"ಬೆಂಗಳೂರು\s*ದಕ್ಷಿಣ\s*(?:ತಾಲೂಕಿನ|ತಾಲೂಕು)", "Bengaluru South Taluk", clean_addr_en)
+        clean_addr_en = re.sub(r"ಬೆಂಗಳೂರು\s*ಉತ್ತರ\s*(?:ತಾಲೂಕಿನ|ತಾಲೂಕು)", "Bengaluru North Taluk", clean_addr_en)
+        clean_addr_en = re.sub(r"ಬೆಂಗಳೂರು\s*ಪೂರ್ವ\s*(?:ತಾಲೂಕಿನ|ತಾಲೂಕು)", "Bengaluru East Taluk", clean_addr_en)
+        clean_addr_en = re.sub(r"ಬೆಂಗಳೂರು", "Bengaluru", clean_addr_en)
+        clean_addr_en = re.sub(r"ತಾಲೂಕಿನ|ತಾಲೂಕು", "Taluk", clean_addr_en)
+        clean_addr_en = re.sub(r"[\u0C80-\u0CFF]+", "", clean_addr_en).strip()
+        clean_addr_en = re.sub(r"\s+", " ", clean_addr_en).strip()
+        address_en = clean_addr_en or f"{locality}, {taluk}, Bengaluru Urban"
+    else:
+        address_en = address
+        address_kn = f"{locality_kn}, {taluk_kn}, ಬೆಂಗಳೂರು ನಗರ"
+
+    # Clean Incident Location bilingual: No mixed strings!
+    incident_location_kn = ""
+    incident_location_en = ""
+    if re.search(r"[\u0C80-\u0CFF]", incident_location):
+        incident_location_kn = incident_location
+        if locality_kn and locality_kn not in incident_location_kn:
+            incident_location_kn = f"{incident_location_kn}, {locality_kn}"
+        clean_loc = convert_kannada_digits(incident_location)
+        clean_loc = re.sub(r"80\s*(?:ಅಡಿ|ft|feet)?\s*ರಸ್ತೆ", "80ft Road", clean_loc, flags=re.IGNORECASE)
+        clean_loc = re.sub(r"100\s*(?:ಅಡಿ|ft|feet)?\s*ರಸ್ತೆ", "100ft Road", clean_loc, flags=re.IGNORECASE)
+        clean_loc = re.sub(r"(\d+)\s*ನೇ\s*ಮುಖ್ಯರಸ್ತೆ", r"\1th Main Road", clean_loc)
+        clean_loc = re.sub(r"(\d+)\s*ನೇ\s*ಕ್ರಾಸ್", r"\1th Cross", clean_loc)
+        clean_loc = re.sub(r"ಮುಖ್ಯರಸ್ತೆ", "Main Road", clean_loc)
+        clean_loc = re.sub(r"ಕ್ರಾಸ್", "Cross", clean_loc)
+        clean_loc = re.sub(r"ರಸ್ತೆ", "Road", clean_loc)
+        clean_loc = re.sub(r"ಕೆರೆ", "Lake", clean_loc)
+        clean_loc = re.sub(r"ವೃತ್ತ", "Circle", clean_loc)
+        clean_loc = re.sub(r"ಜಂಕ್ಷನ್", "Junction", clean_loc)
+        clean_loc = re.sub(r"ಬಳಿ|ಹತ್ತಿರ|ಸಮೀಪ", "Near", clean_loc)
+        clean_loc = re.sub(r"ಮುಂಭಾಗ|ಎದುರು", "Opposite", clean_loc)
+        clean_loc = re.sub(r"ಪಬ್|ಬಾರ್", "Pub", clean_loc)
+        clean_loc = re.sub(r"ಕೋರಮಂಗಲ", "Koramangala", clean_loc)
+        clean_loc = re.sub(r"ಇಂದಿರಾನಗರ", "Indiranagar", clean_loc)
+        clean_loc = re.sub(r"ಬೆಳ್ಳಂದೂರು", "Bellandur", clean_loc)
+        clean_loc = re.sub(r"ವೈಟ್‌ಫೀಲ್ಡ್", "Whitefield", clean_loc)
+        clean_loc = re.sub(r"[\u0C80-\u0CFF]+", "", clean_loc).strip()
+        clean_loc = re.sub(r"\s+", " ", clean_loc).strip()
+        if locality and locality.lower() not in clean_loc.lower():
+            clean_loc = f"{clean_loc}, {locality}" if clean_loc else f"{locality}, {taluk}"
+        incident_location_en = clean_loc or (f"{locality}, {taluk}" if locality else taluk)
+    else:
+        incident_location_en = incident_location
+        incident_location_kn = f"{locality_kn}, {taluk_kn}" if locality_kn else taluk_kn
+
+    # Clean Title bilingual: Pure English and Pure Kannada
+    if re.search(r"[\u0C80-\u0CFF]", title):
+        title_kn = title
+        title_en = f"Petition regarding {category.lower()} at {locality or taluk}"
+    else:
+        title_en = title
+        title_kn = f"{locality_kn or taluk_kn} ವ್ಯಾಪ್ತಿಯಲ್ಲಿ {category_kn} ಕುರಿತು ದೂರು"
+
+    # Clean Relief bilingual
+    if re.search(r"[\u0C80-\u0CFF]", requested_action):
+        requested_action_kn = requested_action
+        requested_action_en = f"Immediate inquiry and statutory administrative action regarding {category.lower()}."
+    else:
+        requested_action_en = requested_action
+        requested_action_kn = f"ಕೂಡಲೇ ಸ್ಥಳ ಪರಿಶೀಲನೆ ನಡೆಸಿ ಸೂಕ್ತ ಕಾನೂನು ಕ್ರಮ ಜರುಗಿಸುವುದು."
+
+    # Directives bilingual
+    directives_en = f"Urgent field inquiry regarding {category} at {incident_location_en}. Verify complainant statements, inspect locus, and submit statutory Action Taken Report (ATR) within follow-up timeline."
+    directives_kn = f"{incident_location_kn} ವ್ಯಾಪ್ತಿಯಲ್ಲಿ {category_kn} ಕುರಿತು ತುರ್ತು ಸ್ಥಳ ಪರಿಶೀಲನೆ ನಡೆಸಿ, ದೂರುದಾರರ ಹೇಳಿಕೆಯನ್ನು ಪಡೆದು, ನಿಗದಿತ ದಿನಾಂಕದೊಳಗೆ ಕ್ರಮ ಕೈಗೊಂಡ ವರದಿ (ATR) ಸಲ್ಲಿಸುವುದು."
+
     return {
-        "citizen_name": citizen_name,
+        "citizen_name": citizen_name_en,
+        "citizen_name_kn": citizen_name_kn,
         "phone": phone,
         "email": email,
-        "address": address,
+        "address": address_en,
+        "address_kn": address_kn,
         "district": "Bengaluru Urban",
+        "district_kn": "ಬೆಂಗಳೂರು ನಗರ",
         "taluk": taluk,
+        "taluk_kn": taluk_kn,
         "village_locality": locality,
-        "title": title,
+        "village_locality_kn": locality_kn,
+        "title": title_en,
+        "title_kn": title_kn,
         "category": category,
+        "category_kn": category_kn,
         "incident_date": incident_date,
-        "incident_location": incident_location,
-        "description": clean_text[:1000].strip(),
-        "requested_action": requested_action,
+        "incident_location": incident_location_en,
+        "incident_location_kn": incident_location_kn,
+        "description": clean_text[:1000].strip() if not is_kn_primary else f"Grievance petition submitted by {citizen_name_en} residing at {address_en}. Incident occurred on {incident_date} at {incident_location_en}. Grievance classification: {category}. Demanded relief: {requested_action_en}.",
+        "description_kn": clean_text[:1000].strip() if is_kn_primary else f"{citizen_name_kn or citizen_name_en} ಅವರು ಸಲ್ಲಿಸಿದ ದೂರು ಅರ್ಜಿ. ವಾಸಸ್ಥಳ: {address_kn}. ಘಟನೆ ನಡೆದ ದಿನಾಂಕ: {incident_date}, ಸ್ಥಳ: {incident_location_kn}. ವಿಷಯ: {category_kn}. ಕೋರಿದ ಪರಿಹಾರ: {requested_action_kn}.",
+        "requested_action": requested_action_en,
+        "requested_action_kn": requested_action_kn,
+        "assignment_instructions_en": directives_en,
+        "assignment_instructions_kn": directives_kn,
         "language": detected_lang,
         "confidence_scores": {
             "citizen": citizen_conf,
