@@ -34,6 +34,7 @@ class UserSummaryResponse(BaseModel):
     id: uuid.UUID
     full_name: str
     email: str
+    phone: Optional[str] = None
     role: str
     department_id: Optional[uuid.UUID] = None
     office_id: Optional[uuid.UUID] = None

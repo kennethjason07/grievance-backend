@@ -230,12 +230,20 @@ def update_user(
             detail="User not found.",
         )
 
-    # Department scoping check
-    if current_user.role.name != RoleName.SUPER_ADMIN:
+    # Department scoping check (bypassed when updating own profile)
+    if current_user.id != user.id and current_user.role.name != RoleName.SUPER_ADMIN:
         if user.department_id != current_user.department_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied: Cannot modify users outside your authorized department.",
+            )
+
+    # Restrict changing office_id unless user has administrative authority
+    if payload.office_id is not None and current_user.id == user.id:
+        if current_user.role.name not in (RoleName.SUPER_ADMIN, RoleName.DEPARTMENT_ADMIN):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: Cannot change your own assigned station/office.",
             )
 
     old_values = {

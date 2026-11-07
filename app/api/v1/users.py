@@ -1,11 +1,11 @@
 import uuid
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.v1.dependencies import get_current_user, require_permission
 from app.core.database import get_db
-from app.core.roles import Permission
+from app.core.roles import Permission, has_permission
 from app.models.user import User
 from app.schemas.user import (
     UserCreate,
@@ -82,8 +82,14 @@ def update_user(
     user_id: uuid.UUID,
     payload: UserUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission(Permission.MANAGE_USERS)),
+    current_user: User = Depends(get_current_user),
 ) -> UserResponse:
+    # Users can update their own contact details; otherwise MANAGE_USERS permission is required
+    if current_user.id != user_id and not has_permission(current_user.role.name, Permission.MANAGE_USERS):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: insufficient permissions to modify other users.",
+        )
     return user_service.update_user(db, user_id, payload, current_user)
 
 

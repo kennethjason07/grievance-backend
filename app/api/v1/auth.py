@@ -95,6 +95,7 @@ def get_current_user_profile(
         id=current_user.id,
         full_name=current_user.full_name,
         email=current_user.email,
+        phone=current_user.phone,
         role=current_user.role.name,
         department_id=current_user.department_id,
         office_id=current_user.office_id,
